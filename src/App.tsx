@@ -32,6 +32,7 @@ import {
 } from "./core/sort";
 import { loadStore, saveStore } from "./app/store";
 import {
+  copyText,
   deleteStoredFile,
   exportBundle,
   importBundle,
@@ -376,6 +377,17 @@ export default function App() {
     [],
   );
 
+  /** 링크 URL 을 클립보드로 복사 */
+  const handleCopyLink = useCallback(
+    (node: FinderNode) => {
+      if (node.type !== "link") return;
+      copyText(node.url)
+        .then(() => flash("링크 복사됨"))
+        .catch(() => flash("복사 실패"));
+    },
+    [flash],
+  );
+
   // ── 컨텍스트 메뉴 ──────────────────────────────────────────────
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: FinderNode, where: "sidebar" | "main") => {
@@ -405,6 +417,9 @@ export default function App() {
         ]
       : [
           { label: "열기", onClick: () => handleOpen(ctx.node) },
+          ...(ctx.node.type === "link"
+            ? [{ label: "링크 복사", onClick: () => handleCopyLink(ctx.node) }]
+            : []),
           { label: "이름 변경", onClick: () => startRename(ctx.node.id, ctx.where) },
           { label: "내보내기…", onClick: () => handleExport(ctx.node) },
           { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },

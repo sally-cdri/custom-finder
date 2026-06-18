@@ -126,6 +126,28 @@ export async function storedAbsPath(storedName: string): Promise<string> {
   return `${cachedFilesDir}/${storedName}`;
 }
 
+/** 텍스트를 클립보드에 복사한다 (navigator.clipboard 우선, 실패 시 폴백). */
+export async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    /* 폴백으로 진행 */
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
 /** 노드(하위 포함)와 참조 파일을 .zip 번들로 내보낸다. */
 export async function exportBundle(
   nodes: FinderNode[],
