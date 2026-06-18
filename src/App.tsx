@@ -23,7 +23,13 @@ import { searchNodes } from "./core/search";
 import { deriveTitle } from "./core/text";
 import { detectService } from "./core/links";
 import { prepareImport } from "./core/bundle";
-import { sortNodes, filterByName, type SortKey, type SortDir } from "./core/sort";
+import {
+  sortNodes,
+  filterByName,
+  filterByService,
+  type SortKey,
+  type SortDir,
+} from "./core/sort";
 import { loadStore, saveStore } from "./app/store";
 import {
   deleteStoredFile,
@@ -71,6 +77,7 @@ export default function App() {
   const mainRenamingId = rename?.where === "main" ? rename.id : null;
   const [query, setQuery] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [serviceFilter, setServiceFilter] = useState<LinkService | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("manual");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [editingText, setEditingText] = useState<TextNode | null>(null);
@@ -249,6 +256,7 @@ export default function App() {
         setCurrentFolderId(node.id);
         setQuery("");
         setFilterText("");
+        setServiceFilter("all");
         break;
       case "link":
         openLink(node.url).catch((e) => flash(`열기 실패: ${e}`));
@@ -537,7 +545,8 @@ export default function App() {
           .join(" / ") || "내 폴더",
     }));
   } else {
-    const children = filterByName(getChildren(nodes, currentFolderId), filterText);
+    let children = filterByName(getChildren(nodes, currentFolderId), filterText);
+    children = filterByService(children, serviceFilter);
     items = sortNodes(children, sortKey, sortDir).map((node) => ({ node }));
   }
 
@@ -554,6 +563,7 @@ export default function App() {
           setCurrentFolderId(id);
           setQuery("");
           setFilterText("");
+          setServiceFilter("all");
         }}
         onMoveInto={handleMove}
         onContextMenu={(e, node) => handleContextMenu(e, node, "sidebar")}
@@ -570,8 +580,10 @@ export default function App() {
           selectedIds={selectedIds}
           renamingId={mainRenamingId}
           filterText={filterText}
+          serviceFilter={serviceFilter}
           sortKey={sortKey}
           sortDir={sortDir}
+          onServiceFilterChange={setServiceFilter}
           onFilterChange={setFilterText}
           onSortKeyChange={setSortKey}
           onSortDirToggle={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
@@ -580,6 +592,7 @@ export default function App() {
             setCurrentFolderId(id);
             setQuery("");
             setFilterText("");
+            setServiceFilter("all");
           }}
           onSelect={handleSelect}
           onSelectMany={handleSelectMany}

@@ -1,4 +1,4 @@
-import type { FinderNode } from "./types";
+import type { FinderNode, LinkService } from "./types";
 
 export type SortKey = "name" | "created" | "updated" | "type" | "manual";
 export type SortDir = "asc" | "desc";
@@ -54,4 +54,13 @@ export function filterByName(nodes: FinderNode[], text: string): FinderNode[] {
   const q = text.trim().toLowerCase();
   if (!q) return nodes;
   return nodes.filter((n) => n.name.toLowerCase().includes(q));
+}
+
+/** 서비스로 필터링. "all" 이면 전체, 그 외엔 해당 서비스 링크만. */
+export function filterByService(
+  nodes: FinderNode[],
+  service: LinkService | "all",
+): FinderNode[] {
+  if (service === "all") return nodes;
+  return nodes.filter((n) => n.type === "link" && n.service === service);
 }

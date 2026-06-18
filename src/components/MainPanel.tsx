@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import type { FinderNode } from "../core/types";
+import type { FinderNode, LinkService } from "../core/types";
 import type { SortKey, SortDir } from "../core/sort";
 import { ItemCard } from "./ItemCard";
 import { AddMenu } from "./AddMenu";
+import { SERVICES } from "./services";
 
 const SORT_LABELS: { key: SortKey; label: string }[] = [
   { key: "manual", label: "기본 순서" },
@@ -32,8 +33,10 @@ interface Props {
   selectedIds: string[];
   renamingId: string | null;
   filterText: string;
+  serviceFilter: LinkService | "all";
   sortKey: SortKey;
   sortDir: SortDir;
+  onServiceFilterChange: (s: LinkService | "all") => void;
   onFilterChange: (t: string) => void;
   onSortKeyChange: (k: SortKey) => void;
   onSortDirToggle: () => void;
@@ -74,8 +77,10 @@ export function MainPanel(props: Props) {
     selectedIds,
     renamingId,
     filterText,
+    serviceFilter,
     sortKey,
     sortDir,
+    onServiceFilterChange,
     onFilterChange,
     onSortKeyChange,
     onSortDirToggle,
@@ -177,6 +182,27 @@ export function MainPanel(props: Props) {
             value={filterText}
             onChange={(e) => onFilterChange(e.target.value)}
           />
+
+          <div className="svc-filter">
+            <button
+              className={`svc-chip ${serviceFilter === "all" ? "svc-chip--on" : ""}`}
+              onClick={() => onServiceFilterChange("all")}
+            >
+              전체
+            </button>
+            {SERVICES.filter((s) => s.icon).map((s) => (
+              <button
+                key={s.key}
+                className={`svc-chip ${serviceFilter === s.key ? "svc-chip--on" : ""}`}
+                title={s.label}
+                onClick={() => onServiceFilterChange(s.key)}
+              >
+                <img src={s.icon!} alt="" className="svc-chip__icon" />
+                {s.label}
+              </button>
+            ))}
+          </div>
+
           <div className="sort">
             <label className="sort__label">정렬</label>
             <select

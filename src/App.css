@@ -272,10 +272,52 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px 12px;
   padding: 8px 18px;
   border-bottom: 1px solid var(--border);
   background: #fafbfc;
+  flex-wrap: wrap;
+}
+
+/* 서비스 필터 칩 */
+.svc-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: center;
+}
+
+.svc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.svc-chip:hover {
+  background: var(--bg);
+}
+
+.svc-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.svc-chip__icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .filter {

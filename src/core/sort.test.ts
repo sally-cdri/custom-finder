@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FinderNode } from "./types";
-import { sortNodes, filterByName } from "./sort";
+import { sortNodes, filterByName, filterByService } from "./sort";
 
 function n(
   id: string,
@@ -44,5 +44,19 @@ describe("filterByName", () => {
   });
   it("빈 값은 전체", () => {
     expect(filterByName(items, "  ").length).toBe(4);
+  });
+});
+
+describe("filterByService", () => {
+  const withLinks: FinderNode[] = [
+    { id: "n", type: "link", name: "노션", parentId: null, order: 0, createdAt: 1, updatedAt: 1, url: "x", service: "notion" } as FinderNode,
+    { id: "s", type: "link", name: "슬랙", parentId: null, order: 1, createdAt: 1, updatedAt: 1, url: "x", service: "slack" } as FinderNode,
+    { id: "f", type: "folder", name: "폴더", parentId: null, order: 2, createdAt: 1, updatedAt: 1 } as FinderNode,
+  ];
+  it("all 이면 전체", () => {
+    expect(filterByService(withLinks, "all").length).toBe(3);
+  });
+  it("특정 서비스 링크만", () => {
+    expect(filterByService(withLinks, "notion").map((x) => x.id)).toEqual(["n"]);
   });
 });
