@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { deriveTitle, previewBody } from "./text";
+import { deriveTitle, previewBody, middleEllipsis } from "./text";
+
+describe("middleEllipsis", () => {
+  it("짧으면 그대로", () => {
+    expect(middleEllipsis("short.png", 24)).toBe("short.png");
+  });
+  it("길면 가운데를 줄이고 확장자 보존", () => {
+    const r = middleEllipsis("A".repeat(40) + ".png", 24);
+    expect(r).toContain("…");
+    expect(r.endsWith(".png")).toBe(true);
+    expect(r.length).toBeLessThanOrEqual(24);
+  });
+  it("확장자 없는 긴 이름도 가운데 생략", () => {
+    const r = middleEllipsis("B".repeat(40), 21);
+    expect(r).toContain("…");
+    expect(r.length).toBeLessThanOrEqual(21);
+  });
+});
 
 describe("deriveTitle", () => {
   it("첫 줄을 제목으로", () => {

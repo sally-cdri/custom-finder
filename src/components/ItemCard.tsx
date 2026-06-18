@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { assetSrc, storedFileExists } from "../app/import";
+import { middleEllipsis } from "../core/text";
 import { TypeIcon } from "./icons";
 import { serviceIcon } from "./services";
 
@@ -162,7 +163,7 @@ export function ItemCard({
             onStartRename(node.id);
           }}
         >
-          {node.name}
+          {middleEllipsis(node.name)}
         </div>
       )}
 
