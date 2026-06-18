@@ -38,6 +38,7 @@ interface Props {
   onAddText: () => void;
   onAddFiles: () => void;
   onAddImages: () => void;
+  onImport: () => void;
 }
 
 function intersects(a: Rect, b: DOMRect): boolean {
@@ -141,6 +142,7 @@ export function MainPanel(props: Props) {
             onAddText={props.onAddText}
             onAddFiles={props.onAddFiles}
             onAddImages={props.onAddImages}
+            onImport={props.onImport}
           />
         </div>
       </header>

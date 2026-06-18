@@ -22,14 +22,19 @@ import {
 import { searchNodes } from "./core/search";
 import { deriveTitle } from "./core/text";
 import { detectService } from "./core/links";
+import { prepareImport } from "./core/bundle";
 import { loadStore, saveStore } from "./app/store";
 import {
   deleteStoredFile,
+  exportBundle,
+  importBundle,
   importFromPath,
   newId,
   openFile,
   openLink,
+  pickBundle,
   pickFiles,
+  pickSavePath,
   saveBytes,
   storedAbsPath,
 } from "./app/import";
@@ -293,6 +298,51 @@ export default function App() {
     [selectedIds, deleteIds],
   );
 
+  /** 번들 내보내기: 대상(선택 전체 또는 해당 노드)과 하위를 .zip 으로 */
+  const handleExport = useCallback(
+    async (node: FinderNode) => {
+      const roots = selectedIds.includes(node.id) ? selectedIds : [node.id];
+      const subtree = new Set<string>();
+      for (const id of roots) {
+        for (const sid of collectSubtreeIds(nodes, id)) subtree.add(sid);
+      }
+      const payload = nodes.filter((n) => subtree.has(n.id));
+      const defaultName =
+        roots.length === 1 ? `${node.name}.zip` : `SallyFinder-${roots.length}개.zip`;
+      try {
+        const dest = await pickSavePath(defaultName);
+        if (!dest) return;
+        await exportBundle(payload, dest);
+        flash("내보내기 완료");
+      } catch (e) {
+        flash(`내보내기 실패: ${e}`);
+      }
+    },
+    [nodes, selectedIds, flash],
+  );
+
+  /** 번들 가져오기: .zip 을 현재 폴더 아래로 복원 */
+  const handleImport = useCallback(async () => {
+    try {
+      const src = await pickBundle();
+      if (!src) return;
+      const { nodes: bundleNodes, rename } = await importBundle(src);
+      const target = currentFolderRef.current;
+      const prepared = prepareImport(bundleNodes, rename, target, Date.now(), newId);
+      setNodes((prev) => {
+        // 루트로 들어오는 노드들의 order 를 현재 폴더 끝에 이어 붙인다
+        let base = nextOrder(prev, target);
+        const fixed = prepared.map((n) =>
+          n.parentId === target ? { ...n, order: base++ } : n,
+        );
+        return [...prev, ...fixed];
+      });
+      flash("가져오기 완료");
+    } catch (e) {
+      flash(`가져오기 실패: ${e}`);
+    }
+  }, [flash]);
+
   const handleSaveText = useCallback(
     (id: string, name: string, content: string) => {
       // 제목을 비우면 아이폰 메모처럼 첫 줄에서 자동 추출
@@ -320,6 +370,10 @@ export default function App() {
     ? multi
       ? [
           {
+            label: `내보내기… (${selectedIds.length}개)`,
+            onClick: () => handleExport(ctx.node),
+          },
+          {
             label: `삭제 (${selectedIds.length}개)`,
             danger: true,
             onClick: () => handleDelete(ctx.node),
@@ -328,6 +382,7 @@ export default function App() {
       : [
           { label: "열기", onClick: () => handleOpen(ctx.node) },
           { label: "이름 변경", onClick: () => startRename(ctx.node.id) },
+          { label: "내보내기…", onClick: () => handleExport(ctx.node) },
           { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
         ]
     : [];
@@ -515,6 +570,7 @@ export default function App() {
           onAddText={handleAddText}
           onAddFiles={() => handleAddFiles(false)}
           onAddImages={() => handleAddFiles(true)}
+          onImport={handleImport}
         />
       </div>
 

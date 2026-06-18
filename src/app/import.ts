@@ -1,7 +1,7 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { openUrl, openPath } from "@tauri-apps/plugin-opener";
-import type { FileNode, ImageNode } from "../core/types";
+import type { FileNode, FinderNode, ImageNode } from "../core/types";
 
 const IMAGE_EXTS = new Set([
   "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "heic", "tiff", "avif",
@@ -124,4 +124,38 @@ export async function storedAbsPath(storedName: string): Promise<string> {
     cachedFilesDir = await invoke<string>("files_dir");
   }
   return `${cachedFilesDir}/${storedName}`;
+}
+
+/** 노드(하위 포함)와 참조 파일을 .zip 번들로 내보낸다. */
+export async function exportBundle(
+  nodes: FinderNode[],
+  destPath: string,
+): Promise<void> {
+  await invoke("export_bundle", { nodes, destPath });
+}
+
+/** .zip 번들을 읽어 manifest 노드와 파일 이름 매핑을 반환한다. */
+export async function importBundle(
+  srcPath: string,
+): Promise<{ nodes: FinderNode[]; rename: Record<string, string> }> {
+  return invoke("import_bundle", { srcPath });
+}
+
+/** 번들 저장 위치 선택 다이얼로그. */
+export async function pickSavePath(defaultName: string): Promise<string | null> {
+  const p = await saveDialog({
+    defaultPath: defaultName,
+    filters: [{ name: "SallyFinder 번들", extensions: ["zip"] }],
+  });
+  return p ?? null;
+}
+
+/** 가져올 번들(.zip) 선택 다이얼로그. */
+export async function pickBundle(): Promise<string | null> {
+  const sel = await openDialog({
+    multiple: false,
+    directory: false,
+    filters: [{ name: "SallyFinder 번들", extensions: ["zip"] }],
+  });
+  return Array.isArray(sel) ? (sel[0] ?? null) : sel;
 }

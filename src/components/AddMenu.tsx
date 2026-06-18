@@ -6,6 +6,7 @@ interface Props {
   onAddText: () => void;
   onAddFiles: () => void;
   onAddImages: () => void;
+  onImport: () => void;
 }
 
 export function AddMenu({
@@ -14,6 +15,7 @@ export function AddMenu({
   onAddText,
   onAddFiles,
   onAddImages,
+  onImport,
 }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -45,6 +47,8 @@ export function AddMenu({
           <div className="addmenu__sep" />
           <button onClick={() => pick(onAddFiles)}>파일 선택…</button>
           <button onClick={() => pick(onAddImages)}>이미지 선택…</button>
+          <div className="addmenu__sep" />
+          <button onClick={() => pick(onImport)}>번들 가져오기…</button>
         </div>
       )}
     </div>

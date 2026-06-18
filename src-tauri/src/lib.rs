@@ -1,3 +1,4 @@
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
@@ -117,6 +118,94 @@ fn file_exists(app: tauri::AppHandle, stored_name: String) -> Result<bool, Strin
     Ok(files_dir_path(&app)?.join(&stored_name).exists())
 }
 
+/// 노드 배열(JSON)과 참조 파일들을 .zip 번들로 내보낸다.
+/// manifest.json(노드 메타) + files/<storedName>(복사본) 구조.
+#[tauri::command]
+fn export_bundle(
+    app: tauri::AppHandle,
+    nodes: serde_json::Value,
+    dest_path: String,
+) -> Result<(), String> {
+    let files = files_dir_path(&app)?;
+    let file = std::fs::File::create(&dest_path).map_err(|e| e.to_string())?;
+    let mut zip = zip::ZipWriter::new(file);
+    let opts = zip::write::SimpleFileOptions::default();
+
+    zip.start_file("manifest.json", opts).map_err(|e| e.to_string())?;
+    let manifest = serde_json::to_vec_pretty(&nodes).map_err(|e| e.to_string())?;
+    zip.write_all(&manifest).map_err(|e| e.to_string())?;
+
+    if let Some(arr) = nodes.as_array() {
+        for n in arr {
+            if let Some(name) = n.get("storedName").and_then(|v| v.as_str()) {
+                let p = files.join(name);
+                if let Ok(bytes) = std::fs::read(&p) {
+                    zip.start_file(format!("files/{name}"), opts)
+                        .map_err(|e| e.to_string())?;
+                    zip.write_all(&bytes).map_err(|e| e.to_string())?;
+                }
+            }
+        }
+    }
+    zip.finish().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// .zip 번들을 읽어 manifest 노드 배열과, 파일을 새 이름으로 복사한 매핑을 반환한다.
+/// 반환: { "nodes": [...], "rename": { "원래파일명": "새파일명" } }
+#[tauri::command]
+fn import_bundle(
+    app: tauri::AppHandle,
+    src_path: String,
+) -> Result<serde_json::Value, String> {
+    let files = files_dir_path(&app)?;
+    let file = std::fs::File::open(&src_path).map_err(|e| e.to_string())?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+
+    let manifest: serde_json::Value = {
+        let mut mf = archive
+            .by_name("manifest.json")
+            .map_err(|_| "번들에 manifest.json 이 없습니다".to_string())?;
+        let mut s = String::new();
+        mf.read_to_string(&mut s).map_err(|e| e.to_string())?;
+        serde_json::from_str(&s).map_err(|e| e.to_string())?
+    };
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+
+    let mut rename = serde_json::Map::new();
+    let mut idx = 0u32;
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        let Some(orig) = name.strip_prefix("files/") else {
+            continue;
+        };
+        if orig.is_empty() {
+            continue;
+        }
+        let ext = Path::new(orig)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        let newname = if ext.is_empty() {
+            format!("imp-{nanos}-{idx}")
+        } else {
+            format!("imp-{nanos}-{idx}.{ext}")
+        };
+        idx += 1;
+        let dest = files.join(&newname);
+        let mut out = std::fs::File::create(&dest).map_err(|e| e.to_string())?;
+        std::io::copy(&mut entry, &mut out).map_err(|e| e.to_string())?;
+        rename.insert(orig.to_string(), serde_json::Value::String(newname));
+    }
+
+    Ok(serde_json::json!({ "nodes": manifest, "rename": serde_json::Value::Object(rename) }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -130,6 +219,8 @@ pub fn run() {
             delete_file,
             files_dir,
             file_exists,
+            export_bundle,
+            import_bundle,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
