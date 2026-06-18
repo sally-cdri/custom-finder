@@ -16,9 +16,13 @@ export interface FolderNode extends BaseNode {
   type: "folder";
 }
 
+export type LinkService = "notion" | "slack" | "jira" | "figma" | "other";
+
 export interface LinkNode extends BaseNode {
   type: "link";
   url: string;
+  /** 링크가 가리키는 서비스 (아이콘 표시용). 없으면 "other" */
+  service?: LinkService;
 }
 
 export interface TextNode extends BaseNode {

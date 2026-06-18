@@ -1,19 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { LinkService } from "../core/types";
+import { detectService } from "../core/links";
+import { SERVICES } from "./services";
 
 interface Props {
-  onSubmit: (url: string, name: string) => void;
+  onSubmit: (url: string, name: string, service: LinkService) => void;
   onClose: () => void;
 }
 
 export function LinkDialog({ onSubmit, onClose }: Props) {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
+  const [service, setService] = useState<LinkService>("other");
+  // 사용자가 직접 서비스를 고르면 URL 자동 추정을 멈춘다
+  const [serviceTouched, setServiceTouched] = useState(false);
+
+  // URL 입력에 따라 서비스 자동 추정 (사용자가 직접 고르기 전까지)
+  useEffect(() => {
+    if (!serviceTouched) setService(detectService(url));
+  }, [url, serviceTouched]);
 
   function submit() {
     const u = url.trim();
     if (!u) return;
     const normalized = /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : `https://${u}`;
-    onSubmit(normalized, name.trim() || normalized);
+    onSubmit(normalized, name.trim() || normalized, service);
     onClose();
   }
 
@@ -21,6 +32,7 @@ export function LinkDialog({ onSubmit, onClose }: Props) {
     <div className="overlay" onMouseDown={onClose}>
       <div className="dialog" onMouseDown={(e) => e.stopPropagation()}>
         <h3 className="dialog__title">링크 추가</h3>
+
         <label className="dialog__field">
           <span>URL</span>
           <input
@@ -31,6 +43,7 @@ export function LinkDialog({ onSubmit, onClose }: Props) {
             onKeyDown={(e) => e.key === "Enter" && submit()}
           />
         </label>
+
         <label className="dialog__field">
           <span>이름 (선택)</span>
           <input
@@ -40,6 +53,31 @@ export function LinkDialog({ onSubmit, onClose }: Props) {
             onKeyDown={(e) => e.key === "Enter" && submit()}
           />
         </label>
+
+        <div className="dialog__field">
+          <span>서비스</span>
+          <div className="service-picker">
+            {SERVICES.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                className={`service-chip ${service === s.key ? "service-chip--on" : ""}`}
+                onClick={() => {
+                  setServiceTouched(true);
+                  setService(s.key);
+                }}
+              >
+                {s.icon ? (
+                  <img src={s.icon} alt="" className="service-chip__icon" />
+                ) : (
+                  <span className="service-chip__dot" />
+                )}
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="editor__actions">
           <button className="btn" onClick={onClose}>
             취소

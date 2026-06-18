@@ -5,6 +5,7 @@ import type {
   FolderNode,
   ImageNode,
   LinkNode,
+  LinkService,
   TextNode,
 } from "./core/types";
 import {
@@ -20,6 +21,7 @@ import {
 } from "./core/tree";
 import { searchNodes } from "./core/search";
 import { deriveTitle } from "./core/text";
+import { detectService } from "./core/links";
 import { loadStore, saveStore } from "./app/store";
 import {
   deleteStoredFile,
@@ -133,12 +135,13 @@ export default function App() {
   }, [appendNode, baseFields, currentFolderId]);
 
   const handleAddLink = useCallback(
-    (url: string, name: string) => {
+    (url: string, name: string, service: LinkService) => {
       const node: LinkNode = {
         ...baseFields(currentFolderId),
         type: "link",
         name,
         url,
+        service,
       };
       appendNode(node);
     },
@@ -328,6 +331,7 @@ export default function App() {
               createdAt: now,
               updatedAt: now,
               url,
+              service: detectService(url),
             } as LinkNode),
           );
         } else {

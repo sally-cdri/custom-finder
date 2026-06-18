@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { assetSrc, storedFileExists } from "../app/import";
 import { TypeIcon } from "./icons";
+import { serviceIcon } from "./services";
 
 /** 텍스트 메모 카드의 미리보기 (제목 + 본문, 아이폰 메모 스타일). */
 function NotePreview({ title, body }: { title: string; body: string }) {
@@ -124,6 +125,12 @@ export function ItemCard({
           <img src={thumb} alt={node.name} className="card__img" />
         ) : node.type === "text" ? (
           <NotePreview title={node.name} body={node.content} />
+        ) : node.type === "link" && serviceIcon(node.service) ? (
+          <img
+            src={serviceIcon(node.service)!}
+            alt={node.service}
+            className="card__service-icon"
+          />
         ) : (
           <TypeIcon type={node.type} />
         )}

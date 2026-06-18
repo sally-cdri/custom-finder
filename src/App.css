@@ -477,6 +477,57 @@ body {
   border-color: var(--accent);
 }
 
+/* 링크 서비스 선택 */
+.service-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.service-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.service-chip:hover {
+  background: var(--bg);
+}
+
+.service-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.service-chip__icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.service-chip__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-dim);
+}
+
+.card__service-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .viewer {
   margin: 0;
   display: flex;
