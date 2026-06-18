@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { ItemCard } from "./ItemCard";
 import { AddMenu } from "./AddMenu";
@@ -7,16 +8,25 @@ export interface DisplayItem {
   subtitle?: string;
 }
 
+interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 interface Props {
   path: FinderNode[];
   items: DisplayItem[];
   query: string;
   searching: boolean;
-  selectedId: string | null;
+  selectedIds: string[];
   renamingId: string | null;
   onQueryChange: (q: string) => void;
   onNavigate: (folderId: string | null) => void;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, additive: boolean, range: boolean) => void;
+  onSelectMany: (ids: string[]) => void;
+  onClearSelection: () => void;
   onOpen: (node: FinderNode) => void;
   onStartRename: (id: string) => void;
   onRename: (id: string, name: string) => void;
@@ -30,17 +40,73 @@ interface Props {
   onAddImages: () => void;
 }
 
+function intersects(a: Rect, b: DOMRect): boolean {
+  return !(
+    a.left > b.right ||
+    a.left + a.width < b.left ||
+    a.top > b.bottom ||
+    a.top + a.height < b.top
+  );
+}
+
 export function MainPanel(props: Props) {
   const {
     path,
     items,
     query,
     searching,
-    selectedId,
+    selectedIds,
     renamingId,
     onQueryChange,
     onNavigate,
+    onSelectMany,
+    onClearSelection,
   } = props;
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [marquee, setMarquee] = useState<Rect | null>(null);
+
+  // 빈 영역에서 마우스 드래그 → 러버밴드 선택
+  function onGridMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0 || e.target !== gridRef.current) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+
+    function rectFrom(x: number, y: number): Rect {
+      return {
+        left: Math.min(startX, x),
+        top: Math.min(startY, y),
+        width: Math.abs(x - startX),
+        height: Math.abs(y - startY),
+      };
+    }
+
+    function onMove(ev: MouseEvent) {
+      const r = rectFrom(ev.clientX, ev.clientY);
+      if (r.width > 3 || r.height > 3) moved = true;
+      setMarquee(r);
+      if (!gridRef.current) return;
+      const hit: string[] = [];
+      gridRef.current.querySelectorAll<HTMLElement>("[data-id]").forEach((el) => {
+        if (intersects(r, el.getBoundingClientRect())) {
+          const id = el.dataset.id;
+          if (id) hit.push(id);
+        }
+      });
+      onSelectMany(hit);
+    }
+
+    function onUp() {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      setMarquee(null);
+      if (!moved) onClearSelection();
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
 
   return (
     <section className="main">
@@ -79,7 +145,7 @@ export function MainPanel(props: Props) {
         </div>
       </header>
 
-      <div className="grid">
+      <div className="grid" ref={gridRef} onMouseDown={onGridMouseDown}>
         {items.length === 0 ? (
           <div className="empty">
             {searching
@@ -91,7 +157,7 @@ export function MainPanel(props: Props) {
             <ItemCard
               key={node.id}
               node={node}
-              selected={selectedId === node.id}
+              selected={selectedIds.includes(node.id)}
               renaming={renamingId === node.id}
               subtitle={subtitle}
               onSelect={props.onSelect}
@@ -105,6 +171,18 @@ export function MainPanel(props: Props) {
           ))
         )}
       </div>
+
+      {marquee && (
+        <div
+          className="marquee"
+          style={{
+            left: marquee.left,
+            top: marquee.top,
+            width: marquee.width,
+            height: marquee.height,
+          }}
+        />
+      )}
     </section>
   );
 }

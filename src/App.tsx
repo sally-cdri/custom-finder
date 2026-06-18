@@ -58,7 +58,7 @@ export default function App() {
   const [nodes, setNodes] = useState<FinderNode[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [editingText, setEditingText] = useState<TextNode | null>(null);
@@ -69,6 +69,51 @@ export default function App() {
 
   const currentFolderRef = useRef<string | null>(null);
   currentFolderRef.current = currentFolderId;
+
+  // 다중 선택용: 범위 선택 기준점 + 현재 표시 중인 항목 순서
+  const anchorRef = useRef<string | null>(null);
+  const displayedIdsRef = useRef<string[]>([]);
+
+  // 선택 헬퍼
+  const selectSingle = useCallback((id: string) => {
+    anchorRef.current = id;
+    setSelectedIds([id]);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    anchorRef.current = null;
+    setSelectedIds([]);
+  }, []);
+
+  /** 클릭 선택: range(shift) = 기준점부터 범위, additive(⌘) = 토글, 그 외 단일 */
+  const handleSelect = useCallback(
+    (id: string, additive: boolean, range: boolean) => {
+      if (range && anchorRef.current) {
+        const ids = displayedIdsRef.current;
+        const a = ids.indexOf(anchorRef.current);
+        const b = ids.indexOf(id);
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a];
+          setSelectedIds(ids.slice(lo, hi + 1));
+          return;
+        }
+      }
+      if (additive) {
+        anchorRef.current = id;
+        setSelectedIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        );
+        return;
+      }
+      selectSingle(id);
+    },
+    [selectSingle],
+  );
+
+  /** 러버밴드(마우스 드래그) 선택 결과 적용 */
+  const handleSelectMany = useCallback((ids: string[]) => {
+    setSelectedIds(ids);
+  }, []);
 
   // 초기 로드
   useEffect(() => {
@@ -119,9 +164,9 @@ export default function App() {
       name: "새 폴더",
     };
     appendNode(node);
-    setSelectedId(node.id);
+    selectSingle(node.id);
     setRenamingId(node.id);
-  }, [appendNode, baseFields, currentFolderId]);
+  }, [appendNode, baseFields, currentFolderId, selectSingle]);
 
   const handleAddText = useCallback(() => {
     const node: TextNode = {
@@ -180,6 +225,8 @@ export default function App() {
         break;
       case "link":
         openLink(node.url).catch((e) => flash(`열기 실패: ${e}`));
+        // 링크는 외부 브라우저로 열리므로 선택을 남기지 않는다
+        clearSelection();
         break;
       case "text":
         setEditingText(node);
@@ -193,7 +240,7 @@ export default function App() {
         break;
       }
     }
-  }, [flash]);
+  }, [flash, clearSelection]);
 
   // ── 이름변경 / 이동 / 삭제 ─────────────────────────────────────
   const handleRename = useCallback((id: string, name: string) => {
@@ -205,22 +252,40 @@ export default function App() {
     setNodes((prev) => moveNode(prev, id, folderId));
   }, []);
 
-  const handleDelete = useCallback((node: FinderNode) => {
+  /** 주어진 노드 id 목록(과 각 하위 전체)을 삭제한다. */
+  const deleteIds = useCallback((targetIds: string[]) => {
+    if (targetIds.length === 0) return;
     setNodes((prev) => {
-      const ids = collectSubtreeIds(prev, node.id);
-      // 복사본 파일 삭제
-      for (const n of prev) {
-        if (ids.has(n.id) && (n.type === "file" || n.type === "image")) {
-          deleteStoredFile(n.storedName).catch(() => {});
+      let next = prev;
+      for (const id of targetIds) {
+        const ids = collectSubtreeIds(next, id);
+        // 현재 폴더가 삭제 범위에 들어가면 최상위로
+        if (
+          currentFolderRef.current &&
+          ids.has(currentFolderRef.current)
+        ) {
+          setCurrentFolderId(null);
         }
+        for (const n of next) {
+          if (ids.has(n.id) && (n.type === "file" || n.type === "image")) {
+            deleteStoredFile(n.storedName).catch(() => {});
+          }
+        }
+        next = deleteNode(next, id);
       }
-      return deleteNode(prev, node.id);
+      return next;
     });
-    if (currentFolderRef.current && collectSubtreeIds(nodes, node.id).has(currentFolderRef.current)) {
-      setCurrentFolderId(null);
-    }
-    setSelectedId(null);
-  }, [nodes]);
+    clearSelection();
+  }, [clearSelection]);
+
+  /** 컨텍스트 메뉴/키보드 삭제: 선택된 항목이 있으면 선택 전체, 없으면 해당 노드 */
+  const handleDelete = useCallback(
+    (node: FinderNode) => {
+      const targets = selectedIds.includes(node.id) ? selectedIds : [node.id];
+      deleteIds(targets);
+    },
+    [selectedIds, deleteIds],
+  );
 
   const handleSaveText = useCallback(
     (id: string, name: string, content: string) => {
@@ -232,19 +297,33 @@ export default function App() {
   );
 
   // ── 컨텍스트 메뉴 ──────────────────────────────────────────────
-  const handleContextMenu = useCallback((e: React.MouseEvent, node: FinderNode) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedId(node.id);
-    setCtx({ x: e.clientX, y: e.clientY, node });
-  }, []);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, node: FinderNode) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // 우클릭한 항목이 선택에 없으면 그 항목만 선택 (선택 유지 시 그대로)
+      setSelectedIds((prev) => (prev.includes(node.id) ? prev : [node.id]));
+      anchorRef.current = node.id;
+      setCtx({ x: e.clientX, y: e.clientY, node });
+    },
+    [],
+  );
 
+  const multi = ctx ? selectedIds.length > 1 && selectedIds.includes(ctx.node.id) : false;
   const ctxItems: MenuItem[] = ctx
-    ? [
-        { label: "열기", onClick: () => handleOpen(ctx.node) },
-        { label: "이름 변경", onClick: () => setRenamingId(ctx.node.id) },
-        { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
-      ]
+    ? multi
+      ? [
+          {
+            label: `삭제 (${selectedIds.length}개)`,
+            danger: true,
+            onClick: () => handleDelete(ctx.node),
+          },
+        ]
+      : [
+          { label: "열기", onClick: () => handleOpen(ctx.node) },
+          { label: "이름 변경", onClick: () => setRenamingId(ctx.node.id) },
+          { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
+        ]
     : [];
 
   // ── OS 파일 드래그&드롭 ────────────────────────────────────────
@@ -359,17 +438,14 @@ export default function App() {
     function onKey(e: KeyboardEvent) {
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
-      if ((e.key === "Backspace" || e.key === "Delete") && selectedId) {
-        const node = nodes.find((n) => n.id === selectedId);
-        if (node) {
-          e.preventDefault();
-          handleDelete(node);
-        }
+      if ((e.key === "Backspace" || e.key === "Delete") && selectedIds.length) {
+        e.preventDefault();
+        deleteIds(selectedIds);
       }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [selectedId, nodes, handleDelete]);
+  }, [selectedIds, deleteIds]);
 
   // ── 표시 항목 계산 ─────────────────────────────────────────────
   const searching = query.trim().length > 0;
@@ -388,9 +464,10 @@ export default function App() {
   }
 
   const path = currentFolderId ? getPath(nodes, currentFolderId) : [];
+  displayedIdsRef.current = items.map((i) => i.node.id);
 
   return (
-    <div className="app" onClick={() => setSelectedId(null)}>
+    <div className="app" onClick={clearSelection}>
       <Sidebar
         nodes={nodes}
         currentFolderId={currentFolderId}
@@ -411,14 +488,16 @@ export default function App() {
           items={items}
           query={query}
           searching={searching}
-          selectedId={selectedId}
+          selectedIds={selectedIds}
           renamingId={renamingId}
           onQueryChange={setQuery}
           onNavigate={(id) => {
             setCurrentFolderId(id);
             setQuery("");
           }}
-          onSelect={setSelectedId}
+          onSelect={handleSelect}
+          onSelectMany={handleSelectMany}
+          onClearSelection={clearSelection}
           onOpen={handleOpen}
           onStartRename={setRenamingId}
           onRename={handleRename}

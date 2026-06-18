@@ -21,7 +21,7 @@ interface Props {
   renaming: boolean;
   /** 검색 결과 등에서 경로를 함께 보여줄 때 */
   subtitle?: string;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, additive: boolean, range: boolean) => void;
   onOpen: (node: FinderNode) => void;
   onStartRename: (id: string) => void;
   onRename: (id: string, name: string) => void;
@@ -92,8 +92,12 @@ export function ItemCard({
         missing ? "card--missing" : "",
       ].join(" ")}
       tabIndex={0}
+      data-id={node.id}
       draggable={!renaming}
-      onClick={() => onSelect(node.id)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(node.id, e.metaKey || e.ctrlKey, e.shiftKey);
+      }}
       onDoubleClick={() => !renaming && onOpen(node)}
       onContextMenu={(e) => onContextMenu(e, node)}
       onDragStart={(e) => {

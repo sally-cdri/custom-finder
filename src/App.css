@@ -101,8 +101,23 @@ body {
 }
 
 .tree-label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tree-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.tree-row--active .tree-count {
+  color: #5b85d6;
 }
 
 .tree-rename {
@@ -284,9 +299,23 @@ body {
   transition: background 0.06s ease;
 }
 
-/* 선택 상태는 색을 남기지 않고 hover 효과만 */
 .card:hover {
   background: var(--bg);
+}
+
+.card--selected,
+.card--selected:hover {
+  background: var(--accent-soft);
+}
+
+/* 러버밴드(마우스 드래그) 선택 박스 */
+.marquee {
+  position: fixed;
+  z-index: 45;
+  border: 1px solid var(--accent);
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 2px;
+  pointer-events: none;
 }
 
 .card--drophover {

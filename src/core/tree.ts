@@ -10,6 +10,21 @@ export function getChildren(
     .sort((a, b) => a.order - b.order);
 }
 
+/** 폴더 바로 아래의 하위 폴더 수와 그 외 항목(파일/링크/이미지/텍스트) 수. */
+export function countChildren(
+  nodes: FinderNode[],
+  parentId: string | null,
+): { folders: number; items: number } {
+  let folders = 0;
+  let items = 0;
+  for (const n of nodes) {
+    if (n.parentId !== parentId) continue;
+    if (n.type === "folder") folders++;
+    else items++;
+  }
+  return { folders, items };
+}
+
 /** 폴더 내 다음 order 값(가장 큰 order + 1, 비어있으면 0). */
 export function nextOrder(
   nodes: FinderNode[],

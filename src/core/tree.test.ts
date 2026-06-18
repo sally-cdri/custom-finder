@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { FinderNode } from "./types";
 import {
+  countChildren,
   nextOrder,
   addNode,
   updateNode,
@@ -64,6 +65,19 @@ describe("getChildren", () => {
   it("order 오름차순 정렬", () => {
     const nodes = [link("b", null, 5), link("a", null, 2)];
     expect(getChildren(nodes, null).map((n) => n.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("countChildren", () => {
+  it("하위 폴더 수와 항목 수를 센다", () => {
+    // work 아래: doc(folder), note(link) → 폴더 1, 항목 1
+    expect(countChildren(sample(), "work")).toEqual({ folders: 1, items: 1 });
+  });
+  it("최상위 카운트", () => {
+    expect(countChildren(sample(), null)).toEqual({ folders: 1, items: 0 });
+  });
+  it("빈 폴더는 0/0", () => {
+    expect(countChildren(sample(), "doc-empty")).toEqual({ folders: 0, items: 0 });
   });
 });
 

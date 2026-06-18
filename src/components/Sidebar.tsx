@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
-import { getChildren } from "../core/tree";
+import { getChildren, countChildren } from "../core/tree";
 
 interface Props {
   nodes: FinderNode[];
@@ -39,6 +39,11 @@ function FolderRow({
   const childFolders = getChildren(nodes, node.id).filter(
     (n) => n.type === "folder",
   );
+  const counts = countChildren(nodes, node.id);
+  const countParts = [
+    counts.folders ? `폴더 ${counts.folders}` : "",
+    counts.items ? `파일 ${counts.items}` : "",
+  ].filter(Boolean);
 
   useEffect(() => {
     if (renaming) {
@@ -113,6 +118,11 @@ function FolderRow({
             }}
           >
             {node.name}
+          </span>
+        )}
+        {!renaming && countParts.length > 0 && (
+          <span className="tree-count" title={countParts.join(" · ")}>
+            {countParts.join(" · ")}
           </span>
         )}
       </div>
