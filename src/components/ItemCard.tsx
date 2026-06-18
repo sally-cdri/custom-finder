@@ -3,6 +3,16 @@ import type { FinderNode } from "../core/types";
 import { assetSrc, storedFileExists } from "../app/import";
 import { TypeIcon } from "./icons";
 
+/** 텍스트 메모 카드의 미리보기 (제목 + 본문, 아이폰 메모 스타일). */
+function NotePreview({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="note">
+      <div className="note__title">{title || "새 메모"}</div>
+      <div className="note__body">{body.trim() || "추가 텍스트 없음"}</div>
+    </div>
+  );
+}
+
 interface Props {
   node: FinderNode;
   selected: boolean;
@@ -112,6 +122,8 @@ export function ItemCard({
       <div className="card__thumb">
         {node.type === "image" && thumb && !missing ? (
           <img src={thumb} alt={node.name} className="card__img" />
+        ) : node.type === "text" ? (
+          <NotePreview title={node.name} body={node.content} />
         ) : (
           <TypeIcon type={node.type} />
         )}

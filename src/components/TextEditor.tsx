@@ -17,36 +17,35 @@ export function TextEditor({ node, onSave, onClose }: Props) {
   }, [node.id]);
 
   function save() {
-    onSave(node.id, name.trim() || "메모", content);
+    onSave(node.id, name, content);
     onClose();
   }
 
   return (
-    <div className="overlay" onMouseDown={onClose}>
+    <div className="overlay" onMouseDown={save}>
       <div className="editor" onMouseDown={(e) => e.stopPropagation()}>
         <input
           className="editor__title"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="제목"
+          placeholder="제목 (비우면 첫 줄에서 자동)"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") save();
+          }}
         />
         <textarea
-          className="editor__body"
+          className="editor__body editor__body--note"
           value={content}
-          autoFocus
           onChange={(e) => setContent(e.target.value)}
-          placeholder="메모 내용을 입력하세요"
+          placeholder="메모를 입력하세요…"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
-            if (e.key === "Escape") onClose();
+            if (e.key === "Escape") save();
           }}
         />
         <div className="editor__actions">
-          <button className="btn" onClick={onClose}>
-            취소
-          </button>
           <button className="btn btn--primary" onClick={save}>
-            저장
+            완료
           </button>
         </div>
       </div>

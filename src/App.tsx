@@ -19,6 +19,7 @@ import {
   updateNode,
 } from "./core/tree";
 import { searchNodes } from "./core/search";
+import { deriveTitle } from "./core/text";
 import { loadStore, saveStore } from "./app/store";
 import {
   deleteStoredFile,
@@ -124,7 +125,7 @@ export default function App() {
     const node: TextNode = {
       ...baseFields(currentFolderId),
       type: "text",
-      name: "새 메모",
+      name: "",
       content: "",
     };
     appendNode(node);
@@ -220,7 +221,9 @@ export default function App() {
 
   const handleSaveText = useCallback(
     (id: string, name: string, content: string) => {
-      setNodes((prev) => updateNode(prev, id, { name, content }));
+      // 제목을 비우면 아이폰 메모처럼 첫 줄에서 자동 추출
+      const title = name.trim() || deriveTitle(content);
+      setNodes((prev) => updateNode(prev, id, { name: title, content }));
     },
     [],
   );
