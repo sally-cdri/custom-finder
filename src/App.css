@@ -271,14 +271,12 @@ body {
   cursor: default;
   outline: none;
   position: relative;
+  transition: background 0.12s ease;
 }
 
+/* 선택 상태는 색을 남기지 않고 hover 효과만 */
 .card:hover {
   background: var(--bg);
-}
-
-.card--selected {
-  background: var(--accent-soft);
 }
 
 .card--drophover {

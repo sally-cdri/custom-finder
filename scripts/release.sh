@@ -8,7 +8,7 @@ set -euo pipefail
 
 VERSION="${1:-}"
 NOTE="${2:-}"
-APP="custom-finder"
+APP="SallyFinder"
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "사용법: bash scripts/release.sh <x.y.z> [\"변경 내용\"]" >&2
