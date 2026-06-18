@@ -50,7 +50,10 @@ for (const f of ["package.json", "src-tauri/tauri.conf.json"]) {
 ' "$VERSION"
 
 git add package.json src-tauri/tauri.conf.json
-git commit -q -m "chore: 버전 $VERSION"
+# 버전이 이미 같으면 변경 사항이 없으므로 커밋을 건너뛴다
+if ! git diff --cached --quiet; then
+  git commit -q -m "chore: 버전 $VERSION"
+fi
 
 echo "▶ 유니버설 빌드 중… (몇 분 소요)"
 npm run tauri build -- --target universal-apple-darwin
