@@ -16,7 +16,13 @@ export interface FolderNode extends BaseNode {
   type: "folder";
 }
 
-export type LinkService = "notion" | "slack" | "jira" | "figma" | "other";
+export type LinkService =
+  | "notion"
+  | "slack"
+  | "jira"
+  | "figma"
+  | "github"
+  | "other";
 
 export interface LinkNode extends BaseNode {
   type: "link";

@@ -3,6 +3,7 @@ import notionIcon from "../assets/services/notion.svg";
 import slackIcon from "../assets/services/slack.svg";
 import jiraIcon from "../assets/services/jira.svg";
 import figmaIcon from "../assets/services/figma.svg";
+import githubIcon from "../assets/services/github.svg";
 
 export interface ServiceDef {
   key: LinkService;
@@ -16,6 +17,7 @@ export const SERVICES: ServiceDef[] = [
   { key: "slack", label: "Slack", icon: slackIcon },
   { key: "jira", label: "Jira", icon: jiraIcon },
   { key: "figma", label: "Figma", icon: figmaIcon },
+  { key: "github", label: "GitHub", icon: githubIcon },
   { key: "other", label: "기타", icon: null },
 ];
 

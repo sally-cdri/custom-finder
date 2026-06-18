@@ -16,6 +16,9 @@ describe("detectService", () => {
   it("figma", () => {
     expect(detectService("https://www.figma.com/file/xyz")).toBe("figma");
   });
+  it("github", () => {
+    expect(detectService("https://github.com/sally-cdri/custom-finder")).toBe("github");
+  });
   it("기타는 other", () => {
     expect(detectService("https://google.com")).toBe("other");
     expect(detectService("")).toBe("other");

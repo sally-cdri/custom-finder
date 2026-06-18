@@ -7,5 +7,6 @@ export function detectService(url: string): LinkService {
   if (u.includes("slack.com")) return "slack";
   if (u.includes("atlassian.net") || u.includes("jira")) return "jira";
   if (u.includes("figma.com")) return "figma";
+  if (u.includes("github.com") || u.includes("github.io")) return "github";
   return "other";
 }
