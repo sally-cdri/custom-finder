@@ -1,6 +1,21 @@
-# custom-finder
+# custom-finder (SallyFinder)
 
 내 맘대로 폴더를 만들고 링크·파일·이미지·텍스트를 한곳에서 관리하는 개인용 데스크톱 Finder 앱.
+
+## 다운로드 (macOS)
+
+[![최신 릴리스](https://img.shields.io/github/v/release/sally-cdri/custom-finder?label=download&sort=semver)](https://github.com/sally-cdri/custom-finder/releases/latest)
+
+**[👉 최신 버전 다운로드](https://github.com/sally-cdri/custom-finder/releases/latest)** — Intel·Apple Silicon 공용(universal) `.dmg`
+
+설치:
+1. 받은 `SallyFinder_<버전>_universal.dmg` 더블클릭 → 앱을 **Applications**로 드래그
+2. 첫 실행(서명 안 된 앱이라 한 번만): 앱 **우클릭 → 열기** → "열기". 안 되면:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/SallyFinder.app
+   ```
+
+자세한 안내: [배포-설치안내.md](배포-설치안내.md)
 
 ## 스택
 
