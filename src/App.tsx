@@ -65,7 +65,10 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
+  // 이름 변경 대상 + 어디서(사이드바/메인) 시작했는지 — 같은 폴더가 양쪽에 떠도 한 곳만 편집
+  const [rename, setRename] = useState<{ id: string; where: "sidebar" | "main" } | null>(null);
+  const sidebarRenamingId = rename?.where === "sidebar" ? rename.id : null;
+  const mainRenamingId = rename?.where === "main" ? rename.id : null;
   const [query, setQuery] = useState("");
   const [filterText, setFilterText] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("manual");
@@ -73,7 +76,12 @@ export default function App() {
   const [editingText, setEditingText] = useState<TextNode | null>(null);
   const [viewingImage, setViewingImage] = useState<ImageNode | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
-  const [ctx, setCtx] = useState<{ x: number; y: number; node: FinderNode } | null>(null);
+  const [ctx, setCtx] = useState<{
+    x: number;
+    y: number;
+    node: FinderNode;
+    where: "sidebar" | "main";
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const currentFolderRef = useRef<string | null>(null);
@@ -90,10 +98,13 @@ export default function App() {
   }, []);
 
   // 이름 변경을 항상 false→true 전환으로 (재)트리거해 입력창 포커스를 보장한다
-  const startRename = useCallback((id: string) => {
-    setRenamingId(null);
-    setTimeout(() => setRenamingId(id), 0);
-  }, []);
+  const startRename = useCallback(
+    (id: string, where: "sidebar" | "main") => {
+      setRename(null);
+      setTimeout(() => setRename({ id, where }), 0);
+    },
+    [],
+  );
 
   const clearSelection = useCallback(() => {
     anchorRef.current = null;
@@ -180,7 +191,7 @@ export default function App() {
     };
     appendNode(node);
     selectSingle(node.id);
-    startRename(node.id);
+    startRename(node.id, "main");
   }, [appendNode, baseFields, currentFolderId, selectSingle, startRename]);
 
   const handleAddText = useCallback(() => {
@@ -261,7 +272,7 @@ export default function App() {
   // ── 이름변경 / 이동 / 삭제 ─────────────────────────────────────
   const handleRename = useCallback((id: string, name: string) => {
     setNodes((prev) => renameNode(prev, id, name));
-    setRenamingId(null);
+    setRename(null);
   }, []);
 
   const handleMove = useCallback((id: string, folderId: string | null) => {
@@ -359,13 +370,13 @@ export default function App() {
 
   // ── 컨텍스트 메뉴 ──────────────────────────────────────────────
   const handleContextMenu = useCallback(
-    (e: React.MouseEvent, node: FinderNode) => {
+    (e: React.MouseEvent, node: FinderNode, where: "sidebar" | "main") => {
       e.preventDefault();
       e.stopPropagation();
       // 우클릭한 항목이 선택에 없으면 그 항목만 선택 (선택 유지 시 그대로)
       setSelectedIds((prev) => (prev.includes(node.id) ? prev : [node.id]));
       anchorRef.current = node.id;
-      setCtx({ x: e.clientX, y: e.clientY, node });
+      setCtx({ x: e.clientX, y: e.clientY, node, where });
     },
     [],
   );
@@ -386,7 +397,7 @@ export default function App() {
         ]
       : [
           { label: "열기", onClick: () => handleOpen(ctx.node) },
-          { label: "이름 변경", onClick: () => startRename(ctx.node.id) },
+          { label: "이름 변경", onClick: () => startRename(ctx.node.id, ctx.where) },
           { label: "내보내기…", onClick: () => handleExport(ctx.node) },
           { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
         ]
@@ -538,17 +549,17 @@ export default function App() {
       <Sidebar
         nodes={nodes}
         currentFolderId={currentFolderId}
-        renamingId={renamingId}
+        renamingId={sidebarRenamingId}
         onSelectFolder={(id) => {
           setCurrentFolderId(id);
           setQuery("");
           setFilterText("");
         }}
         onMoveInto={handleMove}
-        onContextMenu={handleContextMenu}
-        onStartRename={startRename}
+        onContextMenu={(e, node) => handleContextMenu(e, node, "sidebar")}
+        onStartRename={(id) => startRename(id, "sidebar")}
         onRename={handleRename}
-        onCancelRename={() => setRenamingId(null)}
+        onCancelRename={() => setRename(null)}
       />
       <div onClick={(e) => e.stopPropagation()} className="main-wrap">
         <MainPanel
@@ -557,7 +568,7 @@ export default function App() {
           query={query}
           searching={searching}
           selectedIds={selectedIds}
-          renamingId={renamingId}
+          renamingId={mainRenamingId}
           filterText={filterText}
           sortKey={sortKey}
           sortDir={sortDir}
@@ -568,15 +579,16 @@ export default function App() {
           onNavigate={(id) => {
             setCurrentFolderId(id);
             setQuery("");
+            setFilterText("");
           }}
           onSelect={handleSelect}
           onSelectMany={handleSelectMany}
           onClearSelection={clearSelection}
           onOpen={handleOpen}
-          onStartRename={startRename}
+          onStartRename={(id) => startRename(id, "main")}
           onRename={handleRename}
-          onCancelRename={() => setRenamingId(null)}
-          onContextMenu={handleContextMenu}
+          onCancelRename={() => setRename(null)}
+          onContextMenu={(e, node) => handleContextMenu(e, node, "main")}
           onMoveInto={handleMove}
           onAddFolder={handleAddFolder}
           onAddLink={() => setLinkOpen(true)}
