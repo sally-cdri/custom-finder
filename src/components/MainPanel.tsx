@@ -92,6 +92,10 @@ export function MainPanel(props: Props) {
 
   const gridRef = useRef<HTMLDivElement>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
+  const [showControls, setShowControls] = useState(false);
+
+  const controlsActive =
+    filterText.trim() !== "" || serviceFilter !== "all" || sortKey !== "manual";
 
   // 빈 영역에서 마우스 드래그 → 러버밴드 선택
   function onGridMouseDown(e: React.MouseEvent) {
@@ -155,6 +159,15 @@ export function MainPanel(props: Props) {
         </nav>
 
         <div className="main__actions">
+          {!searching && (
+            <button
+              className={`btn btn--toggle ${showControls ? "btn--toggle-on" : ""}`}
+              onClick={() => setShowControls((v) => !v)}
+              title="필터·정렬"
+            >
+              필터·정렬{controlsActive ? " ●" : ""} {showControls ? "▴" : "▾"}
+            </button>
+          )}
           <input
             className="search"
             type="search"
@@ -173,7 +186,7 @@ export function MainPanel(props: Props) {
         </div>
       </header>
 
-      {!searching && (
+      {!searching && showControls && (
         <div className="subbar">
           <input
             className="filter"

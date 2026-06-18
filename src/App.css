@@ -216,6 +216,17 @@ body {
   background: var(--bg);
 }
 
+.btn--toggle {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.btn--toggle-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: #1d4ed8;
+}
+
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);
