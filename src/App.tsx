@@ -80,6 +80,12 @@ export default function App() {
     setSelectedIds([id]);
   }, []);
 
+  // 이름 변경을 항상 false→true 전환으로 (재)트리거해 입력창 포커스를 보장한다
+  const startRename = useCallback((id: string) => {
+    setRenamingId(null);
+    setTimeout(() => setRenamingId(id), 0);
+  }, []);
+
   const clearSelection = useCallback(() => {
     anchorRef.current = null;
     setSelectedIds([]);
@@ -165,8 +171,8 @@ export default function App() {
     };
     appendNode(node);
     selectSingle(node.id);
-    setRenamingId(node.id);
-  }, [appendNode, baseFields, currentFolderId, selectSingle]);
+    startRename(node.id);
+  }, [appendNode, baseFields, currentFolderId, selectSingle, startRename]);
 
   const handleAddText = useCallback(() => {
     const node: TextNode = {
@@ -321,7 +327,7 @@ export default function App() {
         ]
       : [
           { label: "열기", onClick: () => handleOpen(ctx.node) },
-          { label: "이름 변경", onClick: () => setRenamingId(ctx.node.id) },
+          { label: "이름 변경", onClick: () => startRename(ctx.node.id) },
           { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
         ]
     : [];
@@ -478,7 +484,7 @@ export default function App() {
         }}
         onMoveInto={handleMove}
         onContextMenu={handleContextMenu}
-        onStartRename={setRenamingId}
+        onStartRename={startRename}
         onRename={handleRename}
         onCancelRename={() => setRenamingId(null)}
       />
@@ -499,7 +505,7 @@ export default function App() {
           onSelectMany={handleSelectMany}
           onClearSelection={clearSelection}
           onOpen={handleOpen}
-          onStartRename={setRenamingId}
+          onStartRename={startRename}
           onRename={handleRename}
           onCancelRename={() => setRenamingId(null)}
           onContextMenu={handleContextMenu}
