@@ -105,6 +105,16 @@ body {
   text-overflow: ellipsis;
 }
 
+.tree-rename {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 1px 5px;
+  outline: none;
+}
+
 /* ── Main ────────────────────────────────────────── */
 .main {
   flex: 1;
@@ -271,7 +281,7 @@ body {
   cursor: default;
   outline: none;
   position: relative;
-  transition: background 0.12s ease;
+  transition: background 0.06s ease;
 }
 
 /* 선택 상태는 색을 남기지 않고 hover 효과만 */

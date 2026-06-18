@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { getChildren } from "../core/tree";
 
 interface Props {
   nodes: FinderNode[];
   currentFolderId: string | null;
+  renamingId: string | null;
   onSelectFolder: (id: string | null) => void;
   onMoveInto: (id: string, folderId: string | null) => void;
   onContextMenu: (e: React.MouseEvent, node: FinderNode) => void;
+  onStartRename: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  onCancelRename: () => void;
 }
 
 function FolderRow({
@@ -15,18 +19,40 @@ function FolderRow({
   depth,
   nodes,
   currentFolderId,
+  renamingId,
   onSelectFolder,
   onMoveInto,
   onContextMenu,
+  onStartRename,
+  onRename,
+  onCancelRename,
 }: {
   node: FinderNode;
   depth: number;
 } & Props) {
   const [open, setOpen] = useState(true);
   const [hover, setHover] = useState(false);
+  const [draft, setDraft] = useState(node.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const renaming = renamingId === node.id;
+
   const childFolders = getChildren(nodes, node.id).filter(
     (n) => n.type === "folder",
   );
+
+  useEffect(() => {
+    if (renaming) {
+      setDraft(node.name);
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [renaming, node.name]);
+
+  function commit() {
+    const name = draft.trim();
+    if (name && name !== node.name) onRename(node.id, name);
+    else onCancelRename();
+  }
 
   return (
     <div>
@@ -37,7 +63,7 @@ function FolderRow({
           hover ? "tree-row--drophover" : "",
         ].join(" ")}
         style={{ paddingLeft: 8 + depth * 14 }}
-        onClick={() => onSelectFolder(node.id)}
+        onClick={() => !renaming && onSelectFolder(node.id)}
         onContextMenu={(e) => onContextMenu(e, node)}
         onDragOver={(e) => {
           if (e.dataTransfer.types.includes("application/x-finder-node")) {
@@ -64,9 +90,31 @@ function FolderRow({
         >
           {childFolders.length ? (open ? "▾" : "▸") : ""}
         </span>
-        <span className="tree-label" title={node.name}>
-          {node.name}
-        </span>
+        {renaming ? (
+          <input
+            ref={inputRef}
+            className="tree-rename"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") onCancelRename();
+            }}
+          />
+        ) : (
+          <span
+            className="tree-label"
+            title={node.name}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onStartRename(node.id);
+            }}
+          >
+            {node.name}
+          </span>
+        )}
       </div>
       {open &&
         childFolders.map((c) => (
@@ -76,9 +124,13 @@ function FolderRow({
             depth={depth + 1}
             nodes={nodes}
             currentFolderId={currentFolderId}
+            renamingId={renamingId}
             onSelectFolder={onSelectFolder}
             onMoveInto={onMoveInto}
             onContextMenu={onContextMenu}
+            onStartRename={onStartRename}
+            onRename={onRename}
+            onCancelRename={onCancelRename}
           />
         ))}
     </div>

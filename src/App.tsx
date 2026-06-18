@@ -394,12 +394,16 @@ export default function App() {
       <Sidebar
         nodes={nodes}
         currentFolderId={currentFolderId}
+        renamingId={renamingId}
         onSelectFolder={(id) => {
           setCurrentFolderId(id);
           setQuery("");
         }}
         onMoveInto={handleMove}
         onContextMenu={handleContextMenu}
+        onStartRename={setRenamingId}
+        onRename={handleRename}
+        onCancelRename={() => setRenamingId(null)}
       />
       <div onClick={(e) => e.stopPropagation()} className="main-wrap">
         <MainPanel
