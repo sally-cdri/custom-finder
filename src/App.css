@@ -267,6 +267,70 @@ body {
   margin: 4px 0;
 }
 
+/* ── Sub toolbar (필터/정렬) ─────────────────────── */
+.subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc;
+}
+
+.filter {
+  height: 30px;
+  width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+}
+
+.filter:focus {
+  border-color: var(--accent);
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort__label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.sort__select {
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+
+.sort__dir {
+  height: 30px;
+  width: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.sort__dir:hover {
+  background: var(--bg);
+}
+
 /* ── Grid / Cards ────────────────────────────────── */
 .grid {
   flex: 1;

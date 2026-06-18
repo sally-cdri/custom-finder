@@ -23,6 +23,7 @@ import { searchNodes } from "./core/search";
 import { deriveTitle } from "./core/text";
 import { detectService } from "./core/links";
 import { prepareImport } from "./core/bundle";
+import { sortNodes, filterByName, type SortKey, type SortDir } from "./core/sort";
 import { loadStore, saveStore } from "./app/store";
 import {
   deleteStoredFile,
@@ -66,6 +67,9 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [filterText, setFilterText] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("manual");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [editingText, setEditingText] = useState<TextNode | null>(null);
   const [viewingImage, setViewingImage] = useState<ImageNode | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -233,6 +237,7 @@ export default function App() {
       case "folder":
         setCurrentFolderId(node.id);
         setQuery("");
+        setFilterText("");
         break;
       case "link":
         openLink(node.url).catch((e) => flash(`열기 실패: ${e}`));
@@ -521,7 +526,8 @@ export default function App() {
           .join(" / ") || "내 폴더",
     }));
   } else {
-    items = getChildren(nodes, currentFolderId).map((node) => ({ node }));
+    const children = filterByName(getChildren(nodes, currentFolderId), filterText);
+    items = sortNodes(children, sortKey, sortDir).map((node) => ({ node }));
   }
 
   const path = currentFolderId ? getPath(nodes, currentFolderId) : [];
@@ -536,6 +542,7 @@ export default function App() {
         onSelectFolder={(id) => {
           setCurrentFolderId(id);
           setQuery("");
+          setFilterText("");
         }}
         onMoveInto={handleMove}
         onContextMenu={handleContextMenu}
@@ -551,6 +558,12 @@ export default function App() {
           searching={searching}
           selectedIds={selectedIds}
           renamingId={renamingId}
+          filterText={filterText}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onFilterChange={setFilterText}
+          onSortKeyChange={setSortKey}
+          onSortDirToggle={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
           onQueryChange={setQuery}
           onNavigate={(id) => {
             setCurrentFolderId(id);

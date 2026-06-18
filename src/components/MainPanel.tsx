@@ -1,7 +1,16 @@
 import { useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
+import type { SortKey, SortDir } from "../core/sort";
 import { ItemCard } from "./ItemCard";
 import { AddMenu } from "./AddMenu";
+
+const SORT_LABELS: { key: SortKey; label: string }[] = [
+  { key: "manual", label: "기본 순서" },
+  { key: "name", label: "이름" },
+  { key: "created", label: "추가한 날짜" },
+  { key: "updated", label: "수정한 날짜" },
+  { key: "type", label: "종류" },
+];
 
 export interface DisplayItem {
   node: FinderNode;
@@ -22,6 +31,12 @@ interface Props {
   searching: boolean;
   selectedIds: string[];
   renamingId: string | null;
+  filterText: string;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onFilterChange: (t: string) => void;
+  onSortKeyChange: (k: SortKey) => void;
+  onSortDirToggle: () => void;
   onQueryChange: (q: string) => void;
   onNavigate: (folderId: string | null) => void;
   onSelect: (id: string, additive: boolean, range: boolean) => void;
@@ -58,6 +73,12 @@ export function MainPanel(props: Props) {
     searching,
     selectedIds,
     renamingId,
+    filterText,
+    sortKey,
+    sortDir,
+    onFilterChange,
+    onSortKeyChange,
+    onSortDirToggle,
     onQueryChange,
     onNavigate,
     onSelectMany,
@@ -146,6 +167,39 @@ export function MainPanel(props: Props) {
           />
         </div>
       </header>
+
+      {!searching && (
+        <div className="subbar">
+          <input
+            className="filter"
+            type="search"
+            placeholder="이 폴더에서 필터"
+            value={filterText}
+            onChange={(e) => onFilterChange(e.target.value)}
+          />
+          <div className="sort">
+            <label className="sort__label">정렬</label>
+            <select
+              className="sort__select"
+              value={sortKey}
+              onChange={(e) => onSortKeyChange(e.target.value as SortKey)}
+            >
+              {SORT_LABELS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <button
+              className="sort__dir"
+              title={sortDir === "asc" ? "오름차순" : "내림차순"}
+              onClick={onSortDirToggle}
+            >
+              {sortDir === "asc" ? "↑" : "↓"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid" ref={gridRef} onMouseDown={onGridMouseDown}>
         {items.length === 0 ? (
