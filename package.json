@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "test:watch": "vitest",
-    "release": "bash scripts/release.sh"
+    "release": "bash scripts/release.sh",
+    "build:named": "bash scripts/build-named.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
