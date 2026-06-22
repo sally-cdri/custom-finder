@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { getChildren, countChildren } from "../core/tree";
 
+export type SidebarView = "folders" | "todo";
+
 interface Props {
   nodes: FinderNode[];
   currentFolderId: string | null;
@@ -147,8 +149,13 @@ function FolderRow({
   );
 }
 
-export function Sidebar(props: Props) {
-  const { nodes, currentFolderId, onSelectFolder, onMoveInto } = props;
+interface SidebarProps extends Props {
+  view: SidebarView;
+  onChangeView: (view: SidebarView) => void;
+}
+
+export function Sidebar(props: SidebarProps) {
+  const { nodes, currentFolderId, onSelectFolder, onMoveInto, view, onChangeView } = props;
   const rootFolders = getChildren(nodes, null).filter(
     (n) => n.type === "folder",
   );
@@ -156,6 +163,22 @@ export function Sidebar(props: Props) {
 
   return (
     <nav className="sidebar">
+      <div className="tabs">
+        <button
+          className={`tab ${view === "folders" ? "tab--active" : ""}`}
+          onClick={() => onChangeView("folders")}
+        >
+          내 폴더
+        </button>
+        <button
+          className={`tab ${view === "todo" ? "tab--active" : ""}`}
+          onClick={() => onChangeView("todo")}
+        >
+          할 일
+        </button>
+      </div>
+      {view === "todo" ? null : (
+      <>
       <div
         className={[
           "tree-row tree-root",
@@ -184,6 +207,8 @@ export function Sidebar(props: Props) {
       {rootFolders.map((f) => (
         <FolderRow key={f.id} node={f} depth={1} {...props} />
       ))}
+      </>
+      )}
     </nav>
   );
 }

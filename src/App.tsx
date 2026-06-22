@@ -31,6 +31,9 @@ import {
   type SortDir,
 } from "./core/sort";
 import { loadStore, saveStore } from "./app/store";
+import { loadTodos, saveTodos } from "./app/todoStore";
+import type { TodoItem } from "./core/todo";
+import { addTodo, toggleTodo, updateTodo, deleteTodo } from "./core/todo";
 import {
   copyText,
   deleteStoredFile,
@@ -46,8 +49,9 @@ import {
   saveBytes,
   storedAbsPath,
 } from "./app/import";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { MainPanel, type DisplayItem } from "./components/MainPanel";
+import { TodoPanel } from "./components/TodoPanel";
 import { TextEditor } from "./components/TextEditor";
 import { ImageViewer } from "./components/ImageViewer";
 import { LinkDialog } from "./components/LinkDialog";
@@ -70,6 +74,9 @@ function looksLikeUrl(s: string): boolean {
 export default function App() {
   const [nodes, setNodes] = useState<FinderNode[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState<SidebarView>("folders");
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [todosLoaded, setTodosLoaded] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   // 이름 변경 대상 + 어디서(사이드바/메인) 시작했는지 — 같은 폴더가 양쪽에 떠도 한 곳만 편집
@@ -165,6 +172,23 @@ export default function App() {
     }, 300);
     return () => clearTimeout(t);
   }, [nodes, loaded]);
+
+  // 할 일 초기 로드
+  useEffect(() => {
+    loadTodos()
+      .then(setTodos)
+      .catch((e) => setNotice(String(e)))
+      .finally(() => setTodosLoaded(true));
+  }, []);
+
+  // 할 일 변경 시 디바운스 저장
+  useEffect(() => {
+    if (!todosLoaded) return;
+    const t = setTimeout(() => {
+      saveTodos(todos).catch((e) => setNotice(`저장 실패: ${e}`));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [todos, todosLoaded]);
 
   const flash = useCallback((msg: string) => {
     setNotice(msg);
@@ -377,6 +401,26 @@ export default function App() {
     [],
   );
 
+  // ── 할 일 ──────────────────────────────────────────────────────
+  const handleAddTodo = useCallback((title: string) => {
+    setTodos((prev) => addTodo(prev, { title }, Date.now(), newId));
+  }, []);
+
+  const handleToggleTodo = useCallback((id: string) => {
+    setTodos((prev) => toggleTodo(prev, id, Date.now()));
+  }, []);
+
+  const handleUpdateTodo = useCallback(
+    (id: string, patch: Partial<Pick<TodoItem, "title" | "note" | "dueAt">>) => {
+      setTodos((prev) => updateTodo(prev, id, patch, Date.now()));
+    },
+    [],
+  );
+
+  const handleDeleteTodo = useCallback((id: string) => {
+    setTodos((prev) => deleteTodo(prev, id));
+  }, []);
+
   /** 링크 URL 을 클립보드로 복사 */
   const handleCopyLink = useCallback(
     (node: FinderNode) => {
@@ -574,6 +618,8 @@ export default function App() {
         nodes={nodes}
         currentFolderId={currentFolderId}
         renamingId={sidebarRenamingId}
+        view={view}
+        onChangeView={setView}
         onSelectFolder={(id) => {
           setCurrentFolderId(id);
           setQuery("");
@@ -587,6 +633,15 @@ export default function App() {
         onCancelRename={() => setRename(null)}
       />
       <div onClick={(e) => e.stopPropagation()} className="main-wrap">
+        {view === "todo" ? (
+          <TodoPanel
+            todos={todos}
+            onAdd={handleAddTodo}
+            onToggle={handleToggleTodo}
+            onUpdate={handleUpdateTodo}
+            onDelete={handleDeleteTodo}
+          />
+        ) : (
         <MainPanel
           path={path}
           items={items}
@@ -625,6 +680,7 @@ export default function App() {
           onAddImages={() => handleAddFiles(true)}
           onImport={handleImport}
         />
+        )}
       </div>
 
       {editingText && (
