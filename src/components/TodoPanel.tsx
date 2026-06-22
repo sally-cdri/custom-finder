@@ -6,6 +6,7 @@ interface Props {
   todos: TodoItem[];
   /** 사이드바에서 선택해 펼쳐 보여줄 항목 id (변경 시 해당 행을 열고 스크롤) */
   focusedId?: string | null;
+  onToggleMini: () => void;
   onAdd: (title: string) => void;
   onToggle: (id: string) => void;
   onUpdate: (
@@ -143,6 +144,7 @@ function TodoRow({ todo, open, onToggleOpen, onToggle, onUpdate, onDelete }: {
 export function TodoPanel({
   todos,
   focusedId,
+  onToggleMini,
   onAdd,
   onToggle,
   onUpdate,
@@ -177,6 +179,9 @@ export function TodoPanel({
     <section className="main todo-panel">
       <header className="main__toolbar">
         <h2 className="todo-heading">할 일</h2>
+        <button className="todo-mini-btn" onClick={onToggleMini}>
+          미니 창
+        </button>
       </header>
 
       <div className="todo-add">

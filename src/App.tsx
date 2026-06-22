@@ -32,6 +32,8 @@ import {
 } from "./core/sort";
 import { loadStore, saveStore } from "./app/store";
 import { loadTodos, saveTodos } from "./app/todoStore";
+import { emitTodosChanged, onTodosChanged } from "./app/todoSync";
+import { toggleMiniWindow } from "./app/miniWindow";
 import type { TodoItem } from "./core/todo";
 import { addTodo, toggleTodo, updateTodo, deleteTodo } from "./core/todo";
 import {
@@ -99,6 +101,9 @@ export default function App() {
     where: "sidebar" | "main";
   } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // 미니 창에서 들어온 할 일 변경인지 표시 — true면 저장만 하고 다시 emit 안 함
+  const todosExternalRef = useRef(false);
 
   const currentFolderRef = useRef<string | null>(null);
   currentFolderRef.current = currentFolderId;
@@ -182,11 +187,25 @@ export default function App() {
       .finally(() => setTodosLoaded(true));
   }, []);
 
-  // 할 일 변경 시 디바운스 저장
+  // 다른 창(미니)의 할 일 변경 수신
+  useEffect(() => {
+    const un = onTodosChanged("main", (next) => {
+      todosExternalRef.current = true;
+      setTodos(next);
+    });
+    return () => {
+      un.then((f) => f());
+    };
+  }, []);
+
+  // 할 일 변경 시 디바운스 저장 (+ 로컬 변경이면 다른 창에 알림)
   useEffect(() => {
     if (!todosLoaded) return;
+    const wasExternal = todosExternalRef.current;
+    todosExternalRef.current = false;
     const t = setTimeout(() => {
       saveTodos(todos).catch((e) => setNotice(`저장 실패: ${e}`));
+      if (!wasExternal) emitTodosChanged(todos, "main");
     }, 300);
     return () => clearTimeout(t);
   }, [todos, todosLoaded]);
@@ -641,6 +660,7 @@ export default function App() {
           <TodoPanel
             todos={todos}
             focusedId={focusedTodoId}
+            onToggleMini={toggleMiniWindow}
             onAdd={handleAddTodo}
             onToggle={handleToggleTodo}
             onUpdate={handleUpdateTodo}

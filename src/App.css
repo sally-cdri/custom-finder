@@ -788,6 +788,95 @@ body {
   color: var(--accent);
 }
 
+/* ── 미니 창 버튼 ────────────────────────────────── */
+.todo-mini-btn {
+  margin-left: auto;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.todo-mini-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ── 미니 창 ─────────────────────────────────────── */
+.mini {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.mini__add {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mini__input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.mini__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.mini__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.mini__empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.mini__row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mini__row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.mini__check {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.mini__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── 사이드바 할 일 미리보기 ─────────────────────── */
 .todo-side {
   padding: 2px;
