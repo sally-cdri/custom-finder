@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { getChildren, countChildren } from "../core/tree";
+import type { TodoItem } from "../core/todo";
+import { sortTodos } from "../core/todo";
 
 export type SidebarView = "folders" | "todo";
 
@@ -152,10 +154,23 @@ function FolderRow({
 interface SidebarProps extends Props {
   view: SidebarView;
   onChangeView: (view: SidebarView) => void;
+  todos: TodoItem[];
+  onToggleTodo: (id: string) => void;
+  onSelectTodo: (id: string) => void;
 }
 
 export function Sidebar(props: SidebarProps) {
-  const { nodes, currentFolderId, onSelectFolder, onMoveInto, view, onChangeView } = props;
+  const {
+    nodes,
+    currentFolderId,
+    onSelectFolder,
+    onMoveInto,
+    view,
+    onChangeView,
+    todos,
+    onToggleTodo,
+    onSelectTodo,
+  } = props;
   const rootFolders = getChildren(nodes, null).filter(
     (n) => n.type === "folder",
   );
@@ -177,7 +192,32 @@ export function Sidebar(props: SidebarProps) {
           할 일
         </button>
       </div>
-      {view === "todo" ? null : (
+      {view === "todo" ? (
+        <div className="todo-side">
+          {todos.length === 0 ? (
+            <p className="todo-side__empty">할 일이 없습니다.</p>
+          ) : (
+            sortTodos(todos).map((t) => (
+              <div
+                key={t.id}
+                className={`todo-side__row ${t.done ? "todo-side__row--done" : ""}`}
+                onClick={() => onSelectTodo(t.id)}
+              >
+                <input
+                  type="checkbox"
+                  className="todo-side__check"
+                  checked={t.done}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => onToggleTodo(t.id)}
+                />
+                <span className="todo-side__title" title={t.title}>
+                  {t.title}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
       <>
       <div
         className={[

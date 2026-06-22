@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TodoItem } from "../core/todo";
 import { sortTodos } from "../core/todo";
 
 interface Props {
   todos: TodoItem[];
+  /** 사이드바에서 선택해 펼쳐 보여줄 항목 id (변경 시 해당 행을 열고 스크롤) */
+  focusedId?: string | null;
   onAdd: (title: string) => void;
   onToggle: (id: string) => void;
   onUpdate: (
@@ -46,13 +48,14 @@ function isOverdue(ms: number): boolean {
   return ms < todayMid;
 }
 
-function TodoRow({ todo, onToggle, onUpdate, onDelete }: {
+function TodoRow({ todo, open, onToggleOpen, onToggle, onUpdate, onDelete }: {
   todo: TodoItem;
+  open: boolean;
+  onToggleOpen: (id: string) => void;
   onToggle: (id: string) => void;
   onUpdate: Props["onUpdate"];
   onDelete: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(todo.title);
   const [note, setNote] = useState(todo.note ?? "");
 
@@ -67,7 +70,10 @@ function TodoRow({ todo, onToggle, onUpdate, onDelete }: {
   }
 
   return (
-    <div className={`todo-row ${todo.done ? "todo-row--done" : ""}`}>
+    <div
+      className={`todo-row ${todo.done ? "todo-row--done" : ""}`}
+      data-todo-id={todo.id}
+    >
       <div className="todo-row__main">
         <input
           type="checkbox"
@@ -78,7 +84,7 @@ function TodoRow({ todo, onToggle, onUpdate, onDelete }: {
         <span
           className="todo-title"
           title={todo.title}
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => onToggleOpen(todo.id)}
         >
           {todo.title}
         </span>
@@ -134,11 +140,31 @@ function TodoRow({ todo, onToggle, onUpdate, onDelete }: {
   );
 }
 
-export function TodoPanel({ todos, onAdd, onToggle, onUpdate, onDelete }: Props) {
+export function TodoPanel({
+  todos,
+  focusedId,
+  onAdd,
+  onToggle,
+  onUpdate,
+  onDelete,
+}: Props) {
   const [draft, setDraft] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const sorted = sortTodos(todos);
   const active = sorted.filter((t) => !t.done);
   const done = sorted.filter((t) => t.done);
+
+  // 사이드바에서 항목을 고르면 해당 행을 열고 화면 안으로 스크롤
+  useEffect(() => {
+    if (!focusedId) return;
+    setOpenId(focusedId);
+    listRef.current
+      ?.querySelector(`[data-todo-id="${focusedId}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [focusedId]);
+
+  const toggleOpen = (id: string) => setOpenId((o) => (o === id ? null : id));
 
   function add() {
     const t = draft.trim();
@@ -168,7 +194,7 @@ export function TodoPanel({ todos, onAdd, onToggle, onUpdate, onDelete }: Props)
         </button>
       </div>
 
-      <div className="todo-list">
+      <div className="todo-list" ref={listRef}>
         {active.length === 0 && done.length === 0 && (
           <p className="todo-empty">할 일이 없습니다.</p>
         )}
@@ -176,6 +202,8 @@ export function TodoPanel({ todos, onAdd, onToggle, onUpdate, onDelete }: Props)
           <TodoRow
             key={t.id}
             todo={t}
+            open={openId === t.id}
+            onToggleOpen={toggleOpen}
             onToggle={onToggle}
             onUpdate={onUpdate}
             onDelete={onDelete}
@@ -188,6 +216,8 @@ export function TodoPanel({ todos, onAdd, onToggle, onUpdate, onDelete }: Props)
           <TodoRow
             key={t.id}
             todo={t}
+            open={openId === t.id}
+            onToggleOpen={toggleOpen}
             onToggle={onToggle}
             onUpdate={onUpdate}
             onDelete={onDelete}

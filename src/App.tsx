@@ -77,6 +77,7 @@ export default function App() {
   const [view, setView] = useState<SidebarView>("folders");
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [todosLoaded, setTodosLoaded] = useState(false);
+  const [focusedTodoId, setFocusedTodoId] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   // 이름 변경 대상 + 어디서(사이드바/메인) 시작했는지 — 같은 폴더가 양쪽에 떠도 한 곳만 편집
@@ -620,6 +621,9 @@ export default function App() {
         renamingId={sidebarRenamingId}
         view={view}
         onChangeView={setView}
+        todos={todos}
+        onToggleTodo={handleToggleTodo}
+        onSelectTodo={setFocusedTodoId}
         onSelectFolder={(id) => {
           setCurrentFolderId(id);
           setQuery("");
@@ -636,6 +640,7 @@ export default function App() {
         {view === "todo" ? (
           <TodoPanel
             todos={todos}
+            focusedId={focusedTodoId}
             onAdd={handleAddTodo}
             onToggle={handleToggleTodo}
             onUpdate={handleUpdateTodo}

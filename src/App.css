@@ -788,6 +788,53 @@ body {
   color: var(--accent);
 }
 
+/* ── 사이드바 할 일 미리보기 ─────────────────────── */
+.todo-side {
+  padding: 2px;
+}
+
+.todo-side__empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.todo-side__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.todo-side__row:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.todo-side__check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.todo-side__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-side__row--done .todo-side__title {
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
 /* ── 할 일 패널 ──────────────────────────────────── */
 .todo-heading {
   margin: 0;
