@@ -463,6 +463,140 @@ body {
   opacity: 0.6;
 }
 
+/* ── List view ───────────────────────────────────── */
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-content: start;
+}
+
+.list__head {
+  display: flex;
+  gap: 10px;
+  padding: 6px 12px 6px 46px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+.list__head-name {
+  flex: 1;
+}
+
+.list__head-type {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.list__head-date {
+  width: 96px;
+  flex-shrink: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: default;
+  outline: none;
+  position: relative;
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.row--selected,
+.row--selected:hover {
+  background: var(--accent-soft);
+}
+
+.row--drophover {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.row--missing {
+  opacity: 0.6;
+}
+
+.row__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.row__img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+}
+
+.row__service-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.row__name {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__rename {
+  width: 100%;
+  font-size: 13px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 1px 5px;
+  outline: none;
+}
+
+.row__type {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.row__date {
+  width: 96px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .card__thumb {
   width: 64px;
   height: 64px;

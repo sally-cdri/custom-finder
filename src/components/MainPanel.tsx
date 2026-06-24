@@ -3,8 +3,10 @@ import type { FinderNode, LinkService } from "../core/types";
 import type { SortKey, SortDir } from "../core/sort";
 import { ItemCard } from "./ItemCard";
 import { AddMenu } from "./AddMenu";
+import { ViewMenu } from "./ViewMenu";
 import { SERVICES } from "./services";
 import { DRAG_MIME, getDragIds } from "./dnd";
+import type { ViewMode } from "../core/view";
 
 const SORT_LABELS: { key: SortKey; label: string }[] = [
   { key: "manual", label: "기본 순서" },
@@ -37,6 +39,8 @@ interface Props {
   serviceFilter: LinkService | "all";
   sortKey: SortKey;
   sortDir: SortDir;
+  view: ViewMode;
+  onViewChange: (v: ViewMode) => void;
   onServiceFilterChange: (s: LinkService | "all") => void;
   onFilterChange: (t: string) => void;
   onSortKeyChange: (k: SortKey) => void;
@@ -60,7 +64,14 @@ interface Props {
   onImport: () => void;
 }
 
-function intersects(a: Rect, b: DOMRect): boolean {
+interface Edges {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+function intersects(a: Rect, b: Edges): boolean {
   return !(
     a.left > b.right ||
     a.left + a.width < b.left ||
@@ -90,6 +101,8 @@ export function MainPanel(props: Props) {
     onSelectMany,
     onClearSelection,
     onMoveInto,
+    view,
+    onViewChange,
   } = props;
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -147,9 +160,17 @@ export function MainPanel(props: Props) {
       if (r.width > 3 || r.height > 3) moved = true;
       setMarquee(r);
       if (!gridRef.current) return;
+      // 리스트 보기의 sticky 헤더에 가려진 영역은 hit-test 에서 제외 (헤더 아래로 클램프)
+      const head = gridRef.current.querySelector(".list__head");
+      const topLimit = head ? head.getBoundingClientRect().bottom : -Infinity;
       const hit: string[] = [];
       gridRef.current.querySelectorAll<HTMLElement>("[data-id]").forEach((el) => {
-        if (intersects(r, el.getBoundingClientRect())) {
+        const b = el.getBoundingClientRect();
+        const top = Math.max(b.top, topLimit);
+        if (
+          top < b.bottom &&
+          intersects(r, { left: b.left, right: b.right, top, bottom: b.bottom })
+        ) {
           const id = el.dataset.id;
           if (id) hit.push(id);
         }
@@ -196,6 +217,7 @@ export function MainPanel(props: Props) {
         </nav>
 
         <div className="main__actions">
+          <ViewMenu view={view} onChange={onViewChange} />
           {!searching && (
             <button
               className={`btn btn--toggle ${showControls ? "btn--toggle-on" : ""}`}
@@ -277,7 +299,11 @@ export function MainPanel(props: Props) {
         </div>
       )}
 
-      <div className="grid" ref={gridRef} onMouseDown={onGridMouseDown}>
+      <div
+        className={view === "list" ? "list" : "grid"}
+        ref={gridRef}
+        onMouseDown={onGridMouseDown}
+      >
         {items.length === 0 ? (
           <div className="empty">
             {searching
@@ -285,10 +311,19 @@ export function MainPanel(props: Props) {
               : "비어 있습니다. 파일을 끌어다 놓거나 + 추가를 눌러보세요."}
           </div>
         ) : (
-          items.map(({ node, subtitle }) => (
+          <>
+            {view === "list" && (
+              <div className="list__head">
+                <span className="list__head-name">이름</span>
+                <span className="list__head-type">종류</span>
+                <span className="list__head-date">수정한 날짜</span>
+              </div>
+            )}
+            {items.map(({ node, subtitle }) => (
             <ItemCard
               key={node.id}
               node={node}
+              view={view}
               selected={selectedIds.includes(node.id)}
               selectedIds={selectedIds}
               renaming={renamingId === node.id}
@@ -301,7 +336,8 @@ export function MainPanel(props: Props) {
               onContextMenu={props.onContextMenu}
               onMoveInto={props.onMoveInto}
             />
-          ))
+            ))}
+          </>
         )}
       </div>
 

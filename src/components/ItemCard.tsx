@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { assetSrc, storedFileExists } from "../app/import";
 import { middleEllipsis } from "../core/text";
+import { typeLabel, formatShortDate, type ViewMode } from "../core/view";
 import { TypeIcon } from "./icons";
 import { serviceIcon } from "./services";
 import { DRAG_MIME, setDragIds, getDragIds } from "./dnd";
@@ -18,6 +19,8 @@ function NotePreview({ title, body }: { title: string; body: string }) {
 
 interface Props {
   node: FinderNode;
+  /** 카드 / 리스트 보기 */
+  view: ViewMode;
   selected: boolean;
   /** 현재 선택된 모든 노드 id (다중 드래그용) */
   selectedIds: string[];
@@ -37,6 +40,7 @@ interface Props {
 
 export function ItemCard({
   node,
+  view,
   selected,
   selectedIds,
   renaming,
@@ -88,49 +92,109 @@ export function ItemCard({
     else onCancelRename();
   }
 
+  const base = view === "list" ? "row" : "card";
+
+  const renameInput = (
+    <input
+      ref={inputRef}
+      className={`${base}__rename`}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commitRename}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commitRename();
+        if (e.key === "Escape") onCancelRename();
+      }}
+      onClick={(e) => e.stopPropagation()}
+    />
+  );
+
+  const wrapperProps = {
+    className: [
+      base,
+      selected ? `${base}--selected` : "",
+      dropHover ? `${base}--drophover` : "",
+      missing ? `${base}--missing` : "",
+    ].join(" "),
+    tabIndex: 0,
+    "data-id": node.id,
+    draggable: !renaming,
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSelect(node.id, e.metaKey || e.ctrlKey, e.shiftKey);
+    },
+    onDoubleClick: () => !renaming && onOpen(node),
+    onContextMenu: (e: React.MouseEvent) => onContextMenu(e, node),
+    onDragStart: (e: React.DragEvent) => {
+      // 드래그한 항목이 선택에 포함돼 있으면 선택 전체를, 아니면 이 항목만
+      const ids = selected && selectedIds.length > 1 ? selectedIds : [node.id];
+      setDragIds(e.dataTransfer, ids);
+    },
+    onDragOver: (e: React.DragEvent) => {
+      if (node.type === "folder" && e.dataTransfer.types.includes(DRAG_MIME)) {
+        e.preventDefault();
+        setDropHover(true);
+      }
+    },
+    onDragLeave: () => setDropHover(false),
+    onDrop: (e: React.DragEvent) => {
+      setDropHover(false);
+      if (node.type !== "folder") return;
+      const ids = getDragIds(e.dataTransfer).filter((id) => id !== node.id);
+      if (ids.length) {
+        e.preventDefault();
+        onMoveInto(ids, node.id);
+      }
+    },
+  };
+
+  // 리스트: 작은 아이콘 + 이름 + 종류 + 날짜
+  if (view === "list") {
+    return (
+      <div {...wrapperProps}>
+        <div className="row__icon">
+          {node.type === "image" && thumb && !missing ? (
+            <img src={thumb} alt={node.name} className="row__img" />
+          ) : node.type === "link" && serviceIcon(node.service) ? (
+            <img
+              src={serviceIcon(node.service)!}
+              alt={node.service}
+              className="row__service-icon"
+            />
+          ) : (
+            <TypeIcon type={node.type} size={18} />
+          )}
+        </div>
+
+        <div className="row__main">
+          {renaming ? (
+            renameInput
+          ) : (
+            <div
+              className="row__name"
+              title={node.name}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onStartRename(node.id);
+              }}
+            >
+              {node.name}
+            </div>
+          )}
+          {subtitle && <div className="row__subtitle">{subtitle}</div>}
+        </div>
+
+        <div className="row__type">
+          {missing ? "파일 없음" : typeLabel(node.type)}
+        </div>
+        <div className="row__date">{formatShortDate(node.updatedAt)}</div>
+      </div>
+    );
+  }
+
+  // 카드 보기 (기본)
   return (
-    <div
-      className={[
-        "card",
-        selected ? "card--selected" : "",
-        dropHover ? "card--drophover" : "",
-        missing ? "card--missing" : "",
-      ].join(" ")}
-      tabIndex={0}
-      data-id={node.id}
-      draggable={!renaming}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(node.id, e.metaKey || e.ctrlKey, e.shiftKey);
-      }}
-      onDoubleClick={() => !renaming && onOpen(node)}
-      onContextMenu={(e) => onContextMenu(e, node)}
-      onDragStart={(e) => {
-        // 드래그한 카드가 선택에 포함돼 있으면 선택 전체를, 아니면 이 카드만
-        const ids =
-          selected && selectedIds.length > 1 ? selectedIds : [node.id];
-        setDragIds(e.dataTransfer, ids);
-      }}
-      onDragOver={(e) => {
-        if (
-          node.type === "folder" &&
-          e.dataTransfer.types.includes(DRAG_MIME)
-        ) {
-          e.preventDefault();
-          setDropHover(true);
-        }
-      }}
-      onDragLeave={() => setDropHover(false)}
-      onDrop={(e) => {
-        setDropHover(false);
-        if (node.type !== "folder") return;
-        const ids = getDragIds(e.dataTransfer).filter((id) => id !== node.id);
-        if (ids.length) {
-          e.preventDefault();
-          onMoveInto(ids, node.id);
-        }
-      }}
-    >
+    <div {...wrapperProps}>
       <div className="card__thumb">
         {node.type === "image" && thumb && !missing ? (
           <img src={thumb} alt={node.name} className="card__img" />
@@ -148,18 +212,7 @@ export function ItemCard({
       </div>
 
       {renaming ? (
-        <input
-          ref={inputRef}
-          className="card__rename"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commitRename();
-            if (e.key === "Escape") onCancelRename();
-          }}
-          onClick={(e) => e.stopPropagation()}
-        />
+        renameInput
       ) : (
         <div
           className="card__name"

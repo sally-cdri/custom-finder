@@ -31,6 +31,7 @@ import {
   type SortKey,
   type SortDir,
 } from "./core/sort";
+import type { ViewMode } from "./core/view";
 import { loadStore, saveStore } from "./app/store";
 import { loadTodos, saveTodos } from "./app/todoStore";
 import { emitTodosChanged, onTodosChanged } from "./app/todoSync";
@@ -93,6 +94,9 @@ export default function App() {
   const [serviceFilter, setServiceFilter] = useState<LinkService | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("manual");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    localStorage.getItem("cf.view") === "list" ? "list" : "card",
+  );
   const [editingText, setEditingText] = useState<TextNode | null>(null);
   const [viewingImage, setViewingImage] = useState<ImageNode | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -213,6 +217,11 @@ export default function App() {
     }, 300);
     return () => clearTimeout(t);
   }, [todos, todosLoaded]);
+
+  const handleViewChange = useCallback((v: ViewMode) => {
+    setViewMode(v);
+    localStorage.setItem("cf.view", v);
+  }, []);
 
   const flash = useCallback((msg: string) => {
     setNotice(msg);
@@ -717,6 +726,8 @@ export default function App() {
           serviceFilter={serviceFilter}
           sortKey={sortKey}
           sortDir={sortDir}
+          view={viewMode}
+          onViewChange={handleViewChange}
           onServiceFilterChange={setServiceFilter}
           onFilterChange={setFilterText}
           onSortKeyChange={setSortKey}
