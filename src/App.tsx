@@ -15,6 +15,7 @@ import {
   getChildren,
   getPath,
   moveNode,
+  moveMany,
   nextOrder,
   renameNode,
   updateNode,
@@ -58,6 +59,7 @@ import { TextEditor } from "./components/TextEditor";
 import { ImageViewer } from "./components/ImageViewer";
 import { LinkDialog } from "./components/LinkDialog";
 import { ContextMenu, type MenuItem } from "./components/ContextMenu";
+import { MoveDialog } from "./components/MoveDialog";
 import "./App.css";
 
 const EXT_BY_IMAGE_MIME: Record<string, string> = {
@@ -94,6 +96,8 @@ export default function App() {
   const [editingText, setEditingText] = useState<TextNode | null>(null);
   const [viewingImage, setViewingImage] = useState<ImageNode | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
+  // 이동 위치 선택 모달: 이동할 노드 id 목록 (null = 닫힘)
+  const [moveTargets, setMoveTargets] = useState<string[] | null>(null);
   const [ctx, setCtx] = useState<{
     x: number;
     y: number;
@@ -328,9 +332,31 @@ export default function App() {
     setRename(null);
   }, []);
 
-  const handleMove = useCallback((id: string, folderId: string | null) => {
-    setNodes((prev) => moveNode(prev, id, folderId));
-  }, []);
+  const handleMoveMany = useCallback(
+    (ids: string[], folderId: string | null) => {
+      if (ids.length === 0) return;
+      setNodes((prev) => moveMany(prev, ids, folderId));
+    },
+    [],
+  );
+
+  /** 각 노드를 자신의 부모(상위 폴더)로 꺼낸다. */
+  const handleMoveToParent = useCallback(
+    (ids: string[]) => {
+      setNodes((prev) => {
+        let next = prev;
+        for (const id of ids) {
+          const node = next.find((n) => n.id === id);
+          if (node && node.parentId !== null) {
+            const parent = next.find((n) => n.id === node.parentId);
+            next = moveNode(next, id, parent ? parent.parentId : null);
+          }
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   /** 주어진 노드 id 목록(과 각 하위 전체)을 삭제한다. */
   const deleteIds = useCallback((targetIds: string[]) => {
@@ -470,6 +496,10 @@ export default function App() {
     ? multi
       ? [
           {
+            label: `이동 위치 선택… (${selectedIds.length}개)`,
+            onClick: () => setMoveTargets(selectedIds),
+          },
+          {
             label: `내보내기… (${selectedIds.length}개)`,
             onClick: () => handleExport(ctx.node),
           },
@@ -485,6 +515,15 @@ export default function App() {
             ? [{ label: "링크 복사", onClick: () => handleCopyLink(ctx.node) }]
             : []),
           { label: "이름 변경", onClick: () => startRename(ctx.node.id, ctx.where) },
+          { label: "이동 위치 선택…", onClick: () => setMoveTargets([ctx.node.id]) },
+          ...(ctx.node.parentId !== null
+            ? [
+                {
+                  label: "상위로 꺼내기",
+                  onClick: () => handleMoveToParent([ctx.node.id]),
+                },
+              ]
+            : []),
           { label: "내보내기…", onClick: () => handleExport(ctx.node) },
           { label: "삭제", danger: true, onClick: () => handleDelete(ctx.node) },
         ]
@@ -649,7 +688,7 @@ export default function App() {
           setFilterText("");
           setServiceFilter("all");
         }}
-        onMoveInto={handleMove}
+        onMoveInto={handleMoveMany}
         onContextMenu={(e, node) => handleContextMenu(e, node, "sidebar")}
         onStartRename={(id) => startRename(id, "sidebar")}
         onRename={handleRename}
@@ -697,7 +736,7 @@ export default function App() {
           onRename={handleRename}
           onCancelRename={() => setRename(null)}
           onContextMenu={(e, node) => handleContextMenu(e, node, "main")}
-          onMoveInto={handleMove}
+          onMoveInto={handleMoveMany}
           onAddFolder={handleAddFolder}
           onAddLink={() => setLinkOpen(true)}
           onAddText={handleAddText}
@@ -720,6 +759,14 @@ export default function App() {
       )}
       {linkOpen && (
         <LinkDialog onSubmit={handleAddLink} onClose={() => setLinkOpen(false)} />
+      )}
+      {moveTargets && (
+        <MoveDialog
+          nodes={nodes}
+          movingIds={moveTargets}
+          onMove={(folderId) => handleMoveMany(moveTargets, folderId)}
+          onClose={() => setMoveTargets(null)}
+        />
       )}
       {ctx && (
         <ContextMenu

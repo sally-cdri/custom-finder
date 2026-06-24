@@ -4,6 +4,7 @@ import type { SortKey, SortDir } from "../core/sort";
 import { ItemCard } from "./ItemCard";
 import { AddMenu } from "./AddMenu";
 import { SERVICES } from "./services";
+import { DRAG_MIME, getDragIds } from "./dnd";
 
 const SORT_LABELS: { key: SortKey; label: string }[] = [
   { key: "manual", label: "기본 순서" },
@@ -50,7 +51,7 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onCancelRename: () => void;
   onContextMenu: (e: React.MouseEvent, node: FinderNode) => void;
-  onMoveInto: (id: string, folderId: string) => void;
+  onMoveInto: (ids: string[], folderId: string | null) => void;
   onAddFolder: () => void;
   onAddLink: () => void;
   onAddText: () => void;
@@ -88,11 +89,39 @@ export function MainPanel(props: Props) {
     onNavigate,
     onSelectMany,
     onClearSelection,
+    onMoveInto,
   } = props;
 
   const gridRef = useRef<HTMLDivElement>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [showControls, setShowControls] = useState(false);
+  // 드래그가 올라온 브레드크럼 ("__root__" = 내 폴더, 그 외 폴더 id)
+  const [dropCrumb, setDropCrumb] = useState<string | null>(null);
+
+  // 브레드크럼 크럼을 드롭 대상으로 만드는 핸들러
+  function crumbDnd(key: string, folderId: string | null) {
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        if (e.dataTransfer.types.includes(DRAG_MIME)) {
+          e.preventDefault();
+          setDropCrumb(key);
+        }
+      },
+      onDragLeave: (e: React.DragEvent) => {
+        // 자식 엘리먼트로 옮겨가는 경우는 떠난 게 아니다 (하이라이트 깜빡임 방지)
+        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+        setDropCrumb((c) => (c === key ? null : c));
+      },
+      onDrop: (e: React.DragEvent) => {
+        setDropCrumb(null);
+        const ids = getDragIds(e.dataTransfer);
+        if (ids.length) {
+          e.preventDefault();
+          onMoveInto(ids, folderId);
+        }
+      },
+    };
+  }
 
   const controlsActive =
     filterText.trim() !== "" || serviceFilter !== "all" || sortKey !== "manual";
@@ -143,14 +172,22 @@ export function MainPanel(props: Props) {
     <section className="main">
       <header className="main__toolbar">
         <nav className="breadcrumb">
-          <button className="crumb" onClick={() => onNavigate(null)}>
+          <button
+            className={`crumb ${dropCrumb === "__root__" ? "crumb--drophover" : ""}`}
+            onClick={() => onNavigate(null)}
+            {...crumbDnd("__root__", null)}
+          >
             내 폴더
           </button>
           {!searching &&
             path.map((p) => (
               <span key={p.id} className="crumb-wrap">
                 <span className="crumb-sep">›</span>
-                <button className="crumb" onClick={() => onNavigate(p.id)}>
+                <button
+                  className={`crumb ${dropCrumb === p.id ? "crumb--drophover" : ""}`}
+                  onClick={() => onNavigate(p.id)}
+                  {...crumbDnd(p.id, p.id)}
+                >
                   {p.name}
                 </button>
               </span>
@@ -253,6 +290,7 @@ export function MainPanel(props: Props) {
               key={node.id}
               node={node}
               selected={selectedIds.includes(node.id)}
+              selectedIds={selectedIds}
               renaming={renamingId === node.id}
               subtitle={subtitle}
               onSelect={props.onSelect}

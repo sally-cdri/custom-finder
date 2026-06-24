@@ -3,6 +3,7 @@ import type { FinderNode } from "../core/types";
 import { getChildren, countChildren } from "../core/tree";
 import type { TodoItem } from "../core/todo";
 import { sortTodos } from "../core/todo";
+import { DRAG_MIME, getDragIds } from "./dnd";
 
 export type SidebarView = "folders" | "todo";
 
@@ -11,7 +12,7 @@ interface Props {
   currentFolderId: string | null;
   renamingId: string | null;
   onSelectFolder: (id: string | null) => void;
-  onMoveInto: (id: string, folderId: string | null) => void;
+  onMoveInto: (ids: string[], folderId: string | null) => void;
   onContextMenu: (e: React.MouseEvent, node: FinderNode) => void;
   onStartRename: (id: string) => void;
   onRename: (id: string, name: string) => void;
@@ -75,7 +76,7 @@ function FolderRow({
         onClick={() => !renaming && onSelectFolder(node.id)}
         onContextMenu={(e) => onContextMenu(e, node)}
         onDragOver={(e) => {
-          if (e.dataTransfer.types.includes("application/x-finder-node")) {
+          if (e.dataTransfer.types.includes(DRAG_MIME)) {
             e.preventDefault();
             setHover(true);
           }
@@ -83,10 +84,10 @@ function FolderRow({
         onDragLeave={() => setHover(false)}
         onDrop={(e) => {
           setHover(false);
-          const dragged = e.dataTransfer.getData("application/x-finder-node");
-          if (dragged && dragged !== node.id) {
+          const ids = getDragIds(e.dataTransfer).filter((id) => id !== node.id);
+          if (ids.length) {
             e.preventDefault();
-            onMoveInto(dragged, node.id);
+            onMoveInto(ids, node.id);
           }
         }}
       >
@@ -227,7 +228,7 @@ export function Sidebar(props: SidebarProps) {
         ].join(" ")}
         onClick={() => onSelectFolder(null)}
         onDragOver={(e) => {
-          if (e.dataTransfer.types.includes("application/x-finder-node")) {
+          if (e.dataTransfer.types.includes(DRAG_MIME)) {
             e.preventDefault();
             setRootHover(true);
           }
@@ -235,10 +236,10 @@ export function Sidebar(props: SidebarProps) {
         onDragLeave={() => setRootHover(false)}
         onDrop={(e) => {
           setRootHover(false);
-          const dragged = e.dataTransfer.getData("application/x-finder-node");
-          if (dragged) {
+          const ids = getDragIds(e.dataTransfer);
+          if (ids.length) {
             e.preventDefault();
-            onMoveInto(dragged, null);
+            onMoveInto(ids, null);
           }
         }}
       >

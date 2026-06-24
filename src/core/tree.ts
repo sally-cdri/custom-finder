@@ -90,6 +90,21 @@ export function moveNode(
   return updateNode(nodes, id, { parentId: newParentId, order }, now);
 }
 
+/** 여러 노드를 차례로 같은 폴더로 이동한다. 사이클은 각 이동에서 무시된다. */
+export function moveMany(
+  nodes: FinderNode[],
+  ids: string[],
+  newParentId: string | null,
+  now: number = Date.now(),
+): FinderNode[] {
+  // 목록 안에서 다른 항목의 자손인 것은 제외한다. 부모가 함께 이동하면
+  // 자손은 부모를 따라 이동하므로, 따로 옮기면 부모 밖으로 이탈한다.
+  const roots = ids.filter(
+    (id) => !ids.some((other) => other !== id && isDescendant(nodes, other, id)),
+  );
+  return roots.reduce((acc, id) => moveNode(acc, id, newParentId, now), nodes);
+}
+
 /** id 의 서브트리에 속한 모든 노드 id(자기 자신 포함). */
 export function collectSubtreeIds(
   nodes: FinderNode[],

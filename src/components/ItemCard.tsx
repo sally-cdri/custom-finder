@@ -4,6 +4,7 @@ import { assetSrc, storedFileExists } from "../app/import";
 import { middleEllipsis } from "../core/text";
 import { TypeIcon } from "./icons";
 import { serviceIcon } from "./services";
+import { DRAG_MIME, setDragIds, getDragIds } from "./dnd";
 
 /** 텍스트 메모 카드의 미리보기 (제목 + 본문, 아이폰 메모 스타일). */
 function NotePreview({ title, body }: { title: string; body: string }) {
@@ -18,6 +19,8 @@ function NotePreview({ title, body }: { title: string; body: string }) {
 interface Props {
   node: FinderNode;
   selected: boolean;
+  /** 현재 선택된 모든 노드 id (다중 드래그용) */
+  selectedIds: string[];
   /** 부모가 이 카드를 이름 편집 모드로 둘지 */
   renaming: boolean;
   /** 검색 결과 등에서 경로를 함께 보여줄 때 */
@@ -28,13 +31,14 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onCancelRename: () => void;
   onContextMenu: (e: React.MouseEvent, node: FinderNode) => void;
-  /** 노드를 folderId 로 이동 */
-  onMoveInto: (id: string, folderId: string) => void;
+  /** 노드들을 folderId 로 이동 */
+  onMoveInto: (ids: string[], folderId: string) => void;
 }
 
 export function ItemCard({
   node,
   selected,
+  selectedIds,
   renaming,
   subtitle,
   onSelect,
@@ -102,13 +106,15 @@ export function ItemCard({
       onDoubleClick={() => !renaming && onOpen(node)}
       onContextMenu={(e) => onContextMenu(e, node)}
       onDragStart={(e) => {
-        e.dataTransfer.setData("application/x-finder-node", node.id);
-        e.dataTransfer.effectAllowed = "move";
+        // 드래그한 카드가 선택에 포함돼 있으면 선택 전체를, 아니면 이 카드만
+        const ids =
+          selected && selectedIds.length > 1 ? selectedIds : [node.id];
+        setDragIds(e.dataTransfer, ids);
       }}
       onDragOver={(e) => {
         if (
           node.type === "folder" &&
-          e.dataTransfer.types.includes("application/x-finder-node")
+          e.dataTransfer.types.includes(DRAG_MIME)
         ) {
           e.preventDefault();
           setDropHover(true);
@@ -118,10 +124,10 @@ export function ItemCard({
       onDrop={(e) => {
         setDropHover(false);
         if (node.type !== "folder") return;
-        const dragged = e.dataTransfer.getData("application/x-finder-node");
-        if (dragged && dragged !== node.id) {
+        const ids = getDragIds(e.dataTransfer).filter((id) => id !== node.id);
+        if (ids.length) {
           e.preventDefault();
-          onMoveInto(dragged, node.id);
+          onMoveInto(ids, node.id);
         }
       }}
     >

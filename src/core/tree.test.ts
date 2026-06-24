@@ -7,6 +7,7 @@ import {
   updateNode,
   renameNode,
   moveNode,
+  moveMany,
   deleteNode,
   collectSubtreeIds,
   getChildren,
@@ -155,6 +156,37 @@ describe("moveNode", () => {
   it("최상위(null)로 이동할 수 있다", () => {
     const next = moveNode(sample(), "memo", null, 1);
     expect(next.find((n) => n.id === "memo")?.parentId).toBe(null);
+  });
+});
+
+describe("moveMany", () => {
+  it("여러 노드를 같은 폴더로 옮기고 끝 order 에 차례로 붙인다", () => {
+    // doc, note 를 최상위로 → work 와 같은 레벨, order 가 이어서 부여됨
+    const next = moveMany(sample(), ["doc", "note"], null, 3);
+    const moved = getChildren(next, null).map((n) => n.id);
+    expect(moved).toEqual(["work", "doc", "note"]);
+    expect(next.find((n) => n.id === "doc")?.parentId).toBe(null);
+    expect(next.find((n) => n.id === "note")?.parentId).toBe(null);
+  });
+
+  it("사이클을 만드는 이동은 무시하고 나머지는 적용한다", () => {
+    // work(폴더)를 자기 자손 doc 안으로 이동(무시) + memo 는 work 로 이동(적용)
+    const next = moveMany(sample(), ["work", "memo"], "doc", 1);
+    expect(next.find((n) => n.id === "work")?.parentId).toBe(null);
+    // memo 는 이미 doc 자식이므로 그대로 doc
+    expect(next.find((n) => n.id === "memo")?.parentId).toBe("doc");
+  });
+
+  it("빈 목록이면 원본을 그대로 반환", () => {
+    const nodes = sample();
+    expect(moveMany(nodes, [], "work", 1)).toEqual(nodes);
+  });
+
+  it("폴더와 그 자손을 함께 이동하면 자손은 폴더 안에 남는다", () => {
+    // work(폴더)와 그 자손 memo 를 함께 최상위로 → memo 는 doc 안에 그대로 남아야 함
+    const next = moveMany(sample(), ["work", "memo"], null, 1);
+    expect(next.find((n) => n.id === "work")?.parentId).toBe(null);
+    expect(next.find((n) => n.id === "memo")?.parentId).toBe("doc");
   });
 });
 
