@@ -170,14 +170,9 @@ export function ItemCard({
           {renaming ? (
             renameInput
           ) : (
-            <div
-              className="row__name"
-              title={node.name}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                onStartRename(node.id);
-              }}
-            >
+            // 리스트에선 이름이 행 전체를 덮으므로 더블클릭은 열기(폴더 이동)로 둔다.
+            // 이름 변경은 우클릭 메뉴 '이름 변경'으로 한다.
+            <div className="row__name" title={node.name}>
               {node.name}
             </div>
           )}
