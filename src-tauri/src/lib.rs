@@ -103,6 +103,37 @@ fn save_todos(app: tauri::AppHandle, todos: serde_json::Value) -> Result<(), Str
     std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
+fn events_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    Ok(data_dir(app)?.join("events.json"))
+}
+
+/// events.json 을 읽어 이벤트 배열(JSON)을 반환. 없으면 빈 배열.
+/// 파싱 실패 시 기존 파일을 .bak 으로 백업하고 빈 배열을 반환한다.
+#[tauri::command]
+fn load_events(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    let path = events_path(&app)?;
+    let raw = match std::fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(_) => return Ok(serde_json::json!([])),
+    };
+    match serde_json::from_str::<serde_json::Value>(&raw) {
+        Ok(v) if v.is_array() => Ok(v),
+        _ => {
+            let bak = path.with_extension("json.bak");
+            let _ = std::fs::copy(&path, &bak);
+            Ok(serde_json::json!([]))
+        }
+    }
+}
+
+/// 이벤트 배열(JSON)을 events.json 에 저장한다.
+#[tauri::command]
+fn save_events(app: tauri::AppHandle, events: serde_json::Value) -> Result<(), String> {
+    let path = events_path(&app)?;
+    let json = serde_json::to_string_pretty(&events).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
 /// src_path 의 파일을 files/{id}.{ext} 로 복사하고 저장된 파일명을 반환한다.
 #[tauri::command]
 fn import_file(app: tauri::AppHandle, src_path: String, id: String) -> Result<String, String> {
@@ -247,6 +278,8 @@ pub fn run() {
             save_store,
             load_todos,
             save_todos,
+            load_events,
+            save_events,
             import_file,
             save_bytes,
             delete_file,

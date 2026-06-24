@@ -32,6 +32,13 @@ import {
   type SortDir,
 } from "./core/sort";
 import type { ViewMode } from "./core/view";
+import {
+  type CalendarEvent,
+  addEvent,
+  updateEvent,
+  deleteEvent,
+} from "./core/event";
+import { loadEvents, saveEvents } from "./app/eventStore";
 import { loadStore, saveStore } from "./app/store";
 import { loadTodos, saveTodos } from "./app/todoStore";
 import { emitTodosChanged, onTodosChanged } from "./app/todoSync";
@@ -56,6 +63,7 @@ import {
 import { Sidebar, type SidebarView } from "./components/Sidebar";
 import { MainPanel, type DisplayItem } from "./components/MainPanel";
 import { TodoPanel } from "./components/TodoPanel";
+import { CalendarPanel } from "./components/CalendarPanel";
 import { TextEditor } from "./components/TextEditor";
 import { ImageViewer } from "./components/ImageViewer";
 import { LinkDialog } from "./components/LinkDialog";
@@ -82,6 +90,8 @@ export default function App() {
   const [view, setView] = useState<SidebarView>("folders");
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [todosLoaded, setTodosLoaded] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
   const [focusedTodoId, setFocusedTodoId] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -194,6 +204,23 @@ export default function App() {
       .catch((e) => setNotice(String(e)))
       .finally(() => setTodosLoaded(true));
   }, []);
+
+  // 캘린더 이벤트 초기 로드
+  useEffect(() => {
+    loadEvents()
+      .then(setEvents)
+      .catch((e) => setNotice(String(e)))
+      .finally(() => setEventsLoaded(true));
+  }, []);
+
+  // 이벤트 변경 시 디바운스 저장
+  useEffect(() => {
+    if (!eventsLoaded) return;
+    const t = setTimeout(() => {
+      saveEvents(events).catch((e) => setNotice(`저장 실패: ${e}`));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [events, eventsLoaded]);
 
   // 다른 창(미니)의 할 일 변경 수신
   useEffect(() => {
@@ -476,6 +503,28 @@ export default function App() {
     setTodos((prev) => deleteTodo(prev, id));
   }, []);
 
+  // ── 캘린더 이벤트 ──────────────────────────────────────────────
+  const handleAddEvent = useCallback(
+    (input: { title: string; note?: string; date: string }) => {
+      setEvents((prev) => addEvent(prev, input, Date.now(), newId));
+    },
+    [],
+  );
+
+  const handleUpdateEvent = useCallback(
+    (
+      id: string,
+      patch: Partial<Pick<CalendarEvent, "title" | "note" | "date">>,
+    ) => {
+      setEvents((prev) => updateEvent(prev, id, patch, Date.now()));
+    },
+    [],
+  );
+
+  const handleDeleteEvent = useCallback((id: string) => {
+    setEvents((prev) => deleteEvent(prev, id));
+  }, []);
+
   /** 링크 URL 을 클립보드로 복사 */
   const handleCopyLink = useCallback(
     (node: FinderNode) => {
@@ -704,7 +753,14 @@ export default function App() {
         onCancelRename={() => setRename(null)}
       />
       <div onClick={(e) => e.stopPropagation()} className="main-wrap">
-        {view === "todo" ? (
+        {view === "calendar" ? (
+          <CalendarPanel
+            events={events}
+            onAdd={handleAddEvent}
+            onUpdate={handleUpdateEvent}
+            onDelete={handleDeleteEvent}
+          />
+        ) : view === "todo" ? (
           <TodoPanel
             todos={todos}
             focusedId={focusedTodoId}

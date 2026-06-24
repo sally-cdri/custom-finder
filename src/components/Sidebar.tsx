@@ -5,7 +5,7 @@ import type { TodoItem } from "../core/todo";
 import { sortTodos } from "../core/todo";
 import { DRAG_MIME, getDragIds } from "./dnd";
 
-export type SidebarView = "folders" | "todo";
+export type SidebarView = "folders" | "todo" | "calendar";
 
 interface Props {
   nodes: FinderNode[];
@@ -192,8 +192,18 @@ export function Sidebar(props: SidebarProps) {
         >
           할 일
         </button>
+        <button
+          className={`tab ${view === "calendar" ? "tab--active" : ""}`}
+          onClick={() => onChangeView("calendar")}
+        >
+          캘린더
+        </button>
       </div>
-      {view === "todo" ? (
+      {view === "calendar" ? (
+        <div className="cal-side">
+          <p className="todo-side__empty">날짜를 눌러 일정을 추가하세요.</p>
+        </div>
+      ) : view === "todo" ? (
         <div className="todo-side">
           {todos.length === 0 ? (
             <p className="todo-side__empty">할 일이 없습니다.</p>
