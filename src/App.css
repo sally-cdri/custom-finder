@@ -735,6 +735,18 @@ body {
   background: #d7e3fb;
 }
 
+/* 할 일(마감일) 칩 — 이벤트와 다른 톤, 읽기 전용 */
+.cal__chip--todo {
+  background: #fff3e0;
+  color: #b45309;
+  border-left: 3px solid #f59e0b;
+  cursor: default;
+}
+
+.cal__chip--todo:hover {
+  background: #fff3e0;
+}
+
 .cal__more {
   font-size: 10px;
   color: var(--text-dim);

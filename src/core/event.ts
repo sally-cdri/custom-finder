@@ -1,3 +1,5 @@
+import type { TodoItem } from "./todo";
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -76,6 +78,24 @@ export function eventsByDay(
     const arr = map.get(e.date) ?? [];
     arr.push(e);
     map.set(e.date, arr);
+  }
+  for (const arr of map.values()) {
+    arr.sort(
+      (a, b) => a.title.localeCompare(b.title) || a.createdAt - b.createdAt,
+    );
+  }
+  return map;
+}
+
+/** 미완료 + dueAt 있는 할 일을 로컬 날짜키별로 묶는다. 같은 날은 제목순. */
+export function todosByDueDay(todos: TodoItem[]): Map<string, TodoItem[]> {
+  const map = new Map<string, TodoItem[]>();
+  for (const t of todos) {
+    if (t.done || t.dueAt == null) continue;
+    const key = dayKey(new Date(t.dueAt));
+    const arr = map.get(key) ?? [];
+    arr.push(t);
+    map.set(key, arr);
   }
   for (const arr of map.values()) {
     arr.sort(

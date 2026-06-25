@@ -3,13 +3,17 @@ import {
   type CalendarEvent,
   type NewEvent,
   eventsByDay,
+  todosByDueDay,
   monthMatrix,
   todayKey,
 } from "../core/event";
+import type { TodoItem } from "../core/todo";
 import { EventDialog } from "./EventDialog";
 
 interface Props {
   events: CalendarEvent[];
+  /** 마감일이 있는 할 일(미완료)을 날짜 칸에 함께 표시 */
+  todos: TodoItem[];
   onAdd: (input: NewEvent) => void;
   onUpdate: (id: string, patch: Partial<Pick<CalendarEvent, "title" | "note" | "date">>) => void;
   onDelete: (id: string) => void;
@@ -23,7 +27,7 @@ type Dialog =
   | { mode: "edit"; event: CalendarEvent }
   | null;
 
-export function CalendarPanel({ events, onAdd, onUpdate, onDelete }: Props) {
+export function CalendarPanel({ events, todos, onAdd, onUpdate, onDelete }: Props) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-based
@@ -31,6 +35,7 @@ export function CalendarPanel({ events, onAdd, onUpdate, onDelete }: Props) {
 
   const weeks = monthMatrix(year, month);
   const byDay = eventsByDay(events);
+  const todoByDay = todosByDueDay(todos);
   const today = todayKey();
 
   function shift(delta: number) {
@@ -80,6 +85,14 @@ export function CalendarPanel({ events, onAdd, onUpdate, onDelete }: Props) {
                 key.slice(0, 7) === `${year}-${String(month + 1).padStart(2, "0")}`;
               const dayNum = Number(key.slice(8, 10));
               const dayEvents = byDay.get(key) ?? [];
+              const dayTodos = todoByDay.get(key) ?? [];
+              const total = dayEvents.length + dayTodos.length;
+              // 이벤트 먼저, 그 다음 할 일 순으로 MAX_CHIPS 까지만 표시
+              const shownEvents = dayEvents.slice(0, MAX_CHIPS);
+              const shownTodos = dayTodos.slice(
+                0,
+                Math.max(0, MAX_CHIPS - shownEvents.length),
+              );
               return (
                 <div
                   key={key}
@@ -92,7 +105,7 @@ export function CalendarPanel({ events, onAdd, onUpdate, onDelete }: Props) {
                 >
                   <div className="cal__daynum">{dayNum}</div>
                   <div className="cal__chips">
-                    {dayEvents.slice(0, MAX_CHIPS).map((e) => (
+                    {shownEvents.map((e) => (
                       <button
                         key={e.id}
                         className="cal__chip"
@@ -105,10 +118,19 @@ export function CalendarPanel({ events, onAdd, onUpdate, onDelete }: Props) {
                         {e.title}
                       </button>
                     ))}
-                    {dayEvents.length > MAX_CHIPS && (
-                      <div className="cal__more">
-                        +{dayEvents.length - MAX_CHIPS}
+                    {shownTodos.map((t) => (
+                      // 할 일 칩은 읽기 전용. 클릭은 셀의 새-이벤트 추가만 막는다.
+                      <div
+                        key={t.id}
+                        className="cal__chip cal__chip--todo"
+                        title={`할 일: ${t.title}`}
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        {t.title}
                       </div>
+                    ))}
+                    {total > MAX_CHIPS && (
+                      <div className="cal__more">+{total - MAX_CHIPS}</div>
                     )}
                   </div>
                 </div>

@@ -5,10 +5,12 @@ import {
   deleteEvent,
   eventsByDay,
   monthMatrix,
+  todosByDueDay,
   dayKey,
   todayKey,
   type CalendarEvent,
 } from "./event";
+import type { TodoItem } from "./todo";
 
 let n = 0;
 const ids = () => `e${++n}`;
@@ -55,6 +57,40 @@ describe("eventsByDay", () => {
     expect(map.get("2026-06-10")!.map((e) => e.id)).toEqual(["a", "b"]); // 치과 < 회의 (ㅊ<ㅎ)
     expect(map.get("2026-06-20")!.map((e) => e.id)).toEqual(["c"]);
     expect(map.has("2026-06-15")).toBe(false);
+  });
+});
+
+describe("todosByDueDay", () => {
+  function todo(p: Partial<TodoItem> & { id: string }): TodoItem {
+    return {
+      title: p.id,
+      done: false,
+      dueAt: null,
+      createdAt: 0,
+      updatedAt: 0,
+      ...p,
+    };
+  }
+  const due = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime();
+
+  it("미완료 + dueAt 있는 것만 날짜별로 묶는다", () => {
+    const todos = [
+      todo({ id: "a", title: "치과", dueAt: due(2026, 6, 10) }),
+      todo({ id: "b", title: "회의", dueAt: due(2026, 6, 10) }),
+      todo({ id: "c", title: "완료건", dueAt: due(2026, 6, 10), done: true }),
+      todo({ id: "d", title: "마감없음", dueAt: null }),
+      todo({ id: "e", title: "여행", dueAt: due(2026, 6, 20) }),
+    ];
+    const map = todosByDueDay(todos);
+    expect(map.get("2026-06-10")!.map((t) => t.id)).toEqual(["a", "b"]); // 치과<회의
+    expect(map.get("2026-06-20")!.map((t) => t.id)).toEqual(["e"]);
+    // 완료(c)·마감없음(d)은 제외
+    expect(map.get("2026-06-10")!.some((t) => t.id === "c")).toBe(false);
+    expect([...map.values()].flat().some((t) => t.id === "d")).toBe(false);
+  });
+
+  it("해당 항목이 없으면 빈 맵", () => {
+    expect(todosByDueDay([]).size).toBe(0);
   });
 });
 

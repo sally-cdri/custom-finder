@@ -756,6 +756,7 @@ export default function App() {
         {view === "calendar" ? (
           <CalendarPanel
             events={events}
+            todos={todos}
             onAdd={handleAddEvent}
             onUpdate={handleUpdateEvent}
             onDelete={handleDeleteEvent}
