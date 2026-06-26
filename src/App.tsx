@@ -34,6 +34,7 @@ import {
 import type { ViewMode } from "./core/view";
 import {
   type CalendarEvent,
+  type NewEvent,
   addEvent,
   updateEvent,
   deleteEvent,
@@ -504,17 +505,14 @@ export default function App() {
   }, []);
 
   // ── 캘린더 이벤트 ──────────────────────────────────────────────
-  const handleAddEvent = useCallback(
-    (input: { title: string; note?: string; date: string }) => {
-      setEvents((prev) => addEvent(prev, input, Date.now(), newId));
-    },
-    [],
-  );
+  const handleAddEvent = useCallback((input: NewEvent) => {
+    setEvents((prev) => addEvent(prev, input, Date.now(), newId));
+  }, []);
 
   const handleUpdateEvent = useCallback(
     (
       id: string,
-      patch: Partial<Pick<CalendarEvent, "title" | "note" | "date">>,
+      patch: Partial<Pick<CalendarEvent, "title" | "note" | "date" | "label">>,
     ) => {
       setEvents((prev) => updateEvent(prev, id, patch, Date.now()));
     },

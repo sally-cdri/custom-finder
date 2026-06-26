@@ -6,6 +6,8 @@ import {
   todosByDueDay,
   monthMatrix,
   todayKey,
+  labelOf,
+  EVENT_LABELS,
 } from "../core/event";
 import type { TodoItem } from "../core/todo";
 import { EventDialog } from "./EventDialog";
@@ -15,7 +17,10 @@ interface Props {
   /** 마감일이 있는 할 일(미완료)을 날짜 칸에 함께 표시 */
   todos: TodoItem[];
   onAdd: (input: NewEvent) => void;
-  onUpdate: (id: string, patch: Partial<Pick<CalendarEvent, "title" | "note" | "date">>) => void;
+  onUpdate: (
+    id: string,
+    patch: Partial<Pick<CalendarEvent, "title" | "note" | "date" | "label">>,
+  ) => void;
   onDelete: (id: string) => void;
 }
 
@@ -64,9 +69,17 @@ export function CalendarPanel({ events, todos, onAdd, onUpdate, onDelete }: Prop
             ›
           </button>
         </div>
-        <button className="btn" onClick={goToday}>
-          오늘
-        </button>
+        <div className="cal__legend">
+          {EVENT_LABELS.map((l) => (
+            <span key={l.key} className="cal__legend-item">
+              <span className="cal__legend-dot" style={{ background: l.color }} />
+              {l.name}
+            </span>
+          ))}
+          <button className="btn" onClick={goToday}>
+            오늘
+          </button>
+        </div>
       </header>
 
       <div className="cal__grid cal__dow-row">
@@ -108,7 +121,7 @@ export function CalendarPanel({ events, todos, onAdd, onUpdate, onDelete }: Prop
                     {shownEvents.map((e) => (
                       <button
                         key={e.id}
-                        className="cal__chip"
+                        className={`cal__chip cal__chip--${labelOf(e)}`}
                         title={e.title}
                         onClick={(ev) => {
                           ev.stopPropagation();

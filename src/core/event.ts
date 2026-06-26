@@ -1,5 +1,15 @@
 import type { TodoItem } from "./todo";
 
+export type EventLabel = "work" | "me";
+
+/** 라벨 정의(색은 앱 미사용 색). */
+export const EVENT_LABELS: { key: EventLabel; name: string; color: string }[] = [
+  { key: "work", name: "Work", color: "#7c3aed" }, // violet
+  { key: "me", name: "Me", color: "#0d9488" }, // teal
+];
+
+export const DEFAULT_LABEL: EventLabel = "work";
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -7,6 +17,8 @@ export interface CalendarEvent {
   note?: string;
   /** "YYYY-MM-DD" 로컬 날짜. 하루 종일 이벤트라 문자열로 저장(TZ 드리프트 없음). */
   date: string;
+  /** 라벨. 기존 데이터 호환을 위해 optional — 읽을 땐 labelOf 로 보정. */
+  label?: EventLabel;
   createdAt: number;
   updatedAt: number;
 }
@@ -15,6 +27,12 @@ export interface NewEvent {
   title: string;
   note?: string;
   date: string;
+  label: EventLabel;
+}
+
+/** 이벤트의 라벨(없던 기존 데이터는 기본 라벨로 보정). */
+export function labelOf(e: CalendarEvent): EventLabel {
+  return e.label ?? DEFAULT_LABEL;
 }
 
 function pad(n: number): string {
@@ -43,17 +61,18 @@ export function addEvent(
     title: input.title,
     note: input.note,
     date: input.date,
+    label: input.label,
     createdAt: now,
     updatedAt: now,
   };
   return [...events, item];
 }
 
-/** title/note/date 를 부분 수정한 새 배열을 반환한다. */
+/** title/note/date/label 을 부분 수정한 새 배열을 반환한다. */
 export function updateEvent(
   events: CalendarEvent[],
   id: string,
-  patch: Partial<Pick<CalendarEvent, "title" | "note" | "date">>,
+  patch: Partial<Pick<CalendarEvent, "title" | "note" | "date" | "label">>,
   now: number,
 ): CalendarEvent[] {
   return events.map((e) =>

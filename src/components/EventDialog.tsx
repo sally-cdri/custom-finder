@@ -1,5 +1,12 @@
 import { useState } from "react";
-import type { CalendarEvent, NewEvent } from "../core/event";
+import {
+  type CalendarEvent,
+  type NewEvent,
+  type EventLabel,
+  EVENT_LABELS,
+  DEFAULT_LABEL,
+  labelOf,
+} from "../core/event";
 
 interface Props {
   /** 편집 대상 (없으면 새 이벤트) */
@@ -22,11 +29,14 @@ export function EventDialog({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [date, setDate] = useState(initial?.date ?? defaultDate ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
+  const [label, setLabel] = useState<EventLabel>(
+    initial ? labelOf(initial) : DEFAULT_LABEL,
+  );
 
   function submit() {
     const t = title.trim();
     if (!t || !date) return;
-    onSubmit({ title: t, date, note: note.trim() || undefined });
+    onSubmit({ title: t, date, note: note.trim() || undefined, label });
     onClose();
   }
 
@@ -54,6 +64,26 @@ export function EventDialog({
             onChange={(e) => setDate(e.target.value)}
           />
         </label>
+
+        <div className="dialog__field">
+          <span>라벨</span>
+          <div className="label-pick">
+            {EVENT_LABELS.map((l) => (
+              <button
+                key={l.key}
+                type="button"
+                className={`label-swatch ${label === l.key ? "label-swatch--on" : ""}`}
+                onClick={() => setLabel(l.key)}
+              >
+                <span
+                  className="label-swatch__dot"
+                  style={{ background: l.color }}
+                />
+                {l.name}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <label className="dialog__field">
           <span>메모 (선택)</span>

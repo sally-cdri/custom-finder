@@ -8,6 +8,8 @@ import {
   todosByDueDay,
   dayKey,
   todayKey,
+  labelOf,
+  DEFAULT_LABEL,
   type CalendarEvent,
 } from "./event";
 import type { TodoItem } from "./todo";
@@ -34,11 +36,21 @@ describe("dayKey / todayKey", () => {
 });
 
 describe("addEvent / updateEvent / deleteEvent", () => {
-  it("이벤트를 추가한다", () => {
+  it("이벤트를 추가한다(라벨 저장)", () => {
     n = 0;
-    const next = addEvent([], { title: "약속", date: "2026-06-01" }, 100, ids);
+    const next = addEvent(
+      [],
+      { title: "약속", date: "2026-06-01", label: "me" },
+      100,
+      ids,
+    );
     expect(next).toHaveLength(1);
-    expect(next[0]).toMatchObject({ id: "e1", title: "약속", date: "2026-06-01" });
+    expect(next[0]).toMatchObject({
+      id: "e1",
+      title: "약속",
+      date: "2026-06-01",
+      label: "me",
+    });
   });
   it("부분 수정하고 updatedAt 갱신", () => {
     const next = updateEvent(sample(), "a", { date: "2026-06-11" }, 99);
@@ -48,6 +60,15 @@ describe("addEvent / updateEvent / deleteEvent", () => {
   });
   it("삭제한다", () => {
     expect(deleteEvent(sample(), "b").map((e) => e.id)).toEqual(["a", "c"]);
+  });
+});
+
+describe("labelOf", () => {
+  it("라벨이 있으면 그 값", () => {
+    expect(labelOf({ ...sample()[0], label: "me" })).toBe("me");
+  });
+  it("라벨 없던 기존 데이터는 기본 라벨", () => {
+    expect(labelOf(sample()[0])).toBe(DEFAULT_LABEL);
   });
 });
 
