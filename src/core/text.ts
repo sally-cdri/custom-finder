@@ -47,3 +47,53 @@ export function previewBody(content: string): string {
   }
   return rest.join("\n").trim();
 }
+
+/** 문자열이 HTML 태그를 포함하는지 (느슨한 판별). */
+function looksLikeHtml(s: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(s);
+}
+
+/**
+ * HTML 본문에서 검색·제목·미리보기에 쓸 plain text를 뽑는다.
+ * 태그가 없는 legacy plain text는 그대로 통과시킨다.
+ */
+export function htmlToPlainText(html: string): string {
+  if (!html) return "";
+  if (!looksLikeHtml(html)) return html;
+  let s = html;
+  // 블록 닫는 태그와 <br>을 줄바꿈으로
+  s = s.replace(/<\/(p|div|li|h[1-6]|blockquote|pre)>/gi, "\n");
+  s = s.replace(/<br\s*\/?>/gi, "\n");
+  // 나머지 태그 제거
+  s = s.replace(/<[^>]+>/g, "");
+  // 자주 쓰는 엔티티 디코드
+  s = s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+  // 과한 빈 줄 정리
+  return s.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** plain text를 줄바꿈 보존하며 에디터용 HTML로 변환한다. */
+function plainTextToHtml(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const escaped = line
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      return `<p>${escaped}</p>`;
+    })
+    .join("");
+}
+
+/** 에디터 초기 콘텐츠. 이미 HTML이면 그대로, plain text면 HTML로 변환. */
+export function toEditorHtml(content: string): string {
+  if (!content) return "";
+  return looksLikeHtml(content) ? content : plainTextToHtml(content);
+}

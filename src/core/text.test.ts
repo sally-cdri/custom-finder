@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveTitle, previewBody, middleEllipsis } from "./text";
+import { deriveTitle, previewBody, middleEllipsis, htmlToPlainText, toEditorHtml } from "./text";
 
 describe("middleEllipsis", () => {
   it("짧으면 그대로", () => {
@@ -43,5 +43,41 @@ describe("previewBody", () => {
   });
   it("앞 빈 줄 무시 후 본문", () => {
     expect(previewBody("\n제목\n본문")).toBe("본문");
+  });
+});
+
+describe("htmlToPlainText", () => {
+  it("태그를 제거하고 텍스트만 남긴다", () => {
+    expect(htmlToPlainText("<p>안녕 <strong>세상</strong></p>")).toBe("안녕 세상");
+  });
+  it("블록 경계를 줄바꿈으로 바꾼다", () => {
+    expect(htmlToPlainText("<p>첫 줄</p><p>둘째 줄</p>")).toBe("첫 줄\n둘째 줄");
+  });
+  it("<br>을 줄바꿈으로 바꾼다", () => {
+    expect(htmlToPlainText("a<br>b")).toBe("a\nb");
+  });
+  it("엔티티를 디코드한다", () => {
+    expect(htmlToPlainText("<p>a &amp; b &lt;c&gt;</p>")).toBe("a & b <c>");
+  });
+  it("태그 없는 legacy plain text는 그대로 통과", () => {
+    expect(htmlToPlainText("그냥 메모\n둘째 줄")).toBe("그냥 메모\n둘째 줄");
+  });
+  it("빈 입력은 빈 문자열", () => {
+    expect(htmlToPlainText("")).toBe("");
+  });
+});
+
+describe("toEditorHtml", () => {
+  it("이미 HTML이면 그대로 반환", () => {
+    expect(toEditorHtml("<p>hi</p>")).toBe("<p>hi</p>");
+  });
+  it("plain text는 줄 단위로 <p>로 감싼다", () => {
+    expect(toEditorHtml("첫 줄\n둘째 줄")).toBe("<p>첫 줄</p><p>둘째 줄</p>");
+  });
+  it("plain text의 < > & 는 이스케이프", () => {
+    expect(toEditorHtml("a < b & c")).toBe("<p>a &lt; b &amp; c</p>");
+  });
+  it("빈 입력은 빈 문자열", () => {
+    expect(toEditorHtml("")).toBe("");
   });
 });
