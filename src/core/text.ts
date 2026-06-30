@@ -50,7 +50,7 @@ export function previewBody(content: string): string {
 
 /** 문자열이 HTML 태그를 포함하는지 (느슨한 판별). */
 function looksLikeHtml(s: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(s);
+  return /<[a-z][^>]*>/i.test(s);
 }
 
 /**
