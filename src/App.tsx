@@ -815,6 +815,7 @@ export default function App() {
 
       {editingText && (
         <TextEditor
+          key={editingText.id}
           node={editingText}
           onSave={handleSaveText}
           onClose={() => setEditingText(null)}

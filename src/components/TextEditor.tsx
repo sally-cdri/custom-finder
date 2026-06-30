@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -10,6 +10,11 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import type { TextNode } from "../core/types";
 import { toEditorHtml } from "../core/text";
+
+// 글자색 팔레트
+const TEXT_COLORS = ["#e03131", "#1971c2", "#2f9e44", "#f08c00", "#9c36b5", "#212529"];
+// 배경색(하이라이트) 팔레트
+const HL_COLORS = ["#ffec99", "#b2f2bb", "#a5d8ff", "#ffc9c9", "#eebefa", "#dee2e6"];
 
 interface Props {
   node: TextNode;
@@ -34,15 +39,13 @@ export function TextEditor({ node, onSave, onClose }: Props) {
     content: toEditorHtml(node.content),
   });
 
-  useEffect(() => {
-    setName(node.name);
-    editor?.commands.setContent(toEditorHtml(node.content));
-    // node가 바뀔 때만 재설정
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.id, editor]);
-
   function save() {
-    const content = !editor || editor.isEmpty ? "" : editor.getHTML();
+    // 에디터가 아직 초기화되지 않았으면(마운트 직후 백드롭 클릭 등) 저장하지 않고 닫는다 — 기존 내용 보존
+    if (!editor) {
+      onClose();
+      return;
+    }
+    const content = editor.isEmpty ? "" : editor.getHTML();
     onSave(node.id, name, content);
     onClose();
   }
@@ -60,7 +63,14 @@ export function TextEditor({ node, onSave, onClose }: Props) {
           }}
         />
         <Toolbar editor={editor} />
-        <EditorContent className="editor__body editor__body--rich" editor={editor} />
+        <EditorContent
+          className="editor__body editor__body--rich"
+          editor={editor}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") save();
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
+          }}
+        />
         <div className="editor__actions">
           <button className="btn btn--primary" onClick={save}>
             완료
@@ -73,11 +83,6 @@ export function TextEditor({ node, onSave, onClose }: Props) {
 
 function Toolbar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
-
-  // 글자색 팔레트
-  const TEXT_COLORS = ["#e03131", "#1971c2", "#2f9e44", "#f08c00", "#9c36b5", "#212529"];
-  // 배경색(하이라이트) 팔레트
-  const HL_COLORS = ["#ffec99", "#b2f2bb", "#a5d8ff", "#ffc9c9", "#eebefa", "#dee2e6"];
 
   const btn = (active: boolean, onClick: () => void, label: string) => (
     <button
