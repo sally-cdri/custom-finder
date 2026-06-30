@@ -22,6 +22,7 @@ import {
 } from "./core/tree";
 import { searchNodes } from "./core/search";
 import { deriveTitle, htmlToPlainText } from "./core/text";
+import { isEditingTarget } from "./core/dom";
 import { detectService } from "./core/links";
 import { prepareImport } from "./core/bundle";
 import {
@@ -617,8 +618,8 @@ export default function App() {
   // ── 클립보드 붙여넣기 ──────────────────────────────────────────
   useEffect(() => {
     async function onPaste(e: ClipboardEvent) {
-      const tag = (document.activeElement?.tagName ?? "").toLowerCase();
-      if (tag === "input" || tag === "textarea") return; // 편집 중엔 기본 동작
+      // 편집 중(input/textarea/리치 에디터의 contentEditable)이면 기본 동작에 맡긴다
+      if (isEditingTarget(document.activeElement as HTMLElement | null)) return;
       const data = e.clipboardData;
       if (!data) return;
       const parentId = currentFolderRef.current;
@@ -695,8 +696,8 @@ export default function App() {
   // ── Delete 키 삭제 ─────────────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const tag = (document.activeElement?.tagName ?? "").toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
+      // 편집 중(input/textarea/리치 에디터의 contentEditable)이면 카드 삭제 단축키를 무시
+      if (isEditingTarget(document.activeElement as HTMLElement | null)) return;
       if ((e.key === "Backspace" || e.key === "Delete") && selectedIds.length) {
         e.preventDefault();
         deleteIds(selectedIds);
