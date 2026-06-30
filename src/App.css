@@ -954,6 +954,107 @@ body {
   border-color: var(--accent);
 }
 
+/* 리치 에디터 툴바 */
+.editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tb__btn {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.tb__btn:hover {
+  background: var(--hover, #f2f2f2);
+}
+
+.tb__btn--on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.tb__sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* 리치 본문 영역 */
+.editor__body--rich {
+  min-height: 240px;
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.editor__body--rich .ProseMirror {
+  outline: none;
+  min-height: 220px;
+}
+
+.editor__body--rich .ProseMirror h1 { font-size: 1.5em; font-weight: 700; margin: 0.4em 0; }
+.editor__body--rich .ProseMirror h2 { font-size: 1.3em; font-weight: 700; margin: 0.4em 0; }
+.editor__body--rich .ProseMirror h3 { font-size: 1.1em; font-weight: 700; margin: 0.4em 0; }
+.editor__body--rich .ProseMirror p { margin: 0.3em 0; }
+.editor__body--rich .ProseMirror ul,
+.editor__body--rich .ProseMirror ol { padding-left: 1.4em; margin: 0.3em 0; }
+.editor__body--rich .ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  color: #666;
+  margin: 0.4em 0;
+}
+.editor__body--rich .ProseMirror pre {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  overflow-x: auto;
+}
+.editor__body--rich .ProseMirror code {
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.editor__body--rich .ProseMirror a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+/* 체크리스트 */
+.editor__body--rich .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.editor__body--rich .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.editor__body--rich .ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 2px;
+}
+.editor__body--rich .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
 .editor__actions {
   display: flex;
   justify-content: flex-end;

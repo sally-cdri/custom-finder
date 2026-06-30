@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import type { TextNode } from "../core/types";
+import { toEditorHtml } from "../core/text";
 
 interface Props {
   node: TextNode;
@@ -9,14 +16,27 @@ interface Props {
 
 export function TextEditor({ node, onSave, onClose }: Props) {
   const [name, setName] = useState(node.name);
-  const [content, setContent] = useState(node.content);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link.configure({ openOnClick: false }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+    ],
+    content: toEditorHtml(node.content),
+  });
 
   useEffect(() => {
     setName(node.name);
-    setContent(node.content);
-  }, [node.id]);
+    editor?.commands.setContent(toEditorHtml(node.content));
+    // node가 바뀔 때만 재설정
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.id, editor]);
 
   function save() {
+    const content = !editor || editor.isEmpty ? "" : editor.getHTML();
     onSave(node.id, name, content);
     onClose();
   }
@@ -33,22 +53,61 @@ export function TextEditor({ node, onSave, onClose }: Props) {
             if (e.key === "Escape") save();
           }}
         />
-        <textarea
-          className="editor__body editor__body--note"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="메모를 입력하세요…"
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
-            if (e.key === "Escape") save();
-          }}
-        />
+        <Toolbar editor={editor} />
+        <EditorContent className="editor__body editor__body--rich" editor={editor} />
         <div className="editor__actions">
           <button className="btn btn--primary" onClick={save}>
             완료
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Toolbar({ editor }: { editor: Editor | null }) {
+  if (!editor) return null;
+
+  const btn = (active: boolean, onClick: () => void, label: string) => (
+    <button
+      type="button"
+      className={"tb__btn" + (active ? " tb__btn--on" : "")}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+
+  function setLink() {
+    const prev = editor!.getAttributes("link").href as string | undefined;
+    const url = window.prompt("링크 URL", prev ?? "https://");
+    if (url === null) return;
+    if (url === "") {
+      editor!.chain().focus().unsetLink().run();
+      return;
+    }
+    editor!.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }
+
+  return (
+    <div className="editor__toolbar">
+      {btn(editor.isActive("bold"), () => editor.chain().focus().toggleBold().run(), "굵게")}
+      {btn(editor.isActive("italic"), () => editor.chain().focus().toggleItalic().run(), "기울임")}
+      {btn(editor.isActive("underline"), () => editor.chain().focus().toggleUnderline().run(), "밑줄")}
+      {btn(editor.isActive("strike"), () => editor.chain().focus().toggleStrike().run(), "취소선")}
+      <span className="tb__sep" />
+      {btn(editor.isActive("heading", { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run(), "H1")}
+      {btn(editor.isActive("heading", { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run(), "H2")}
+      {btn(editor.isActive("heading", { level: 3 }), () => editor.chain().focus().toggleHeading({ level: 3 }).run(), "H3")}
+      <span className="tb__sep" />
+      {btn(editor.isActive("bulletList"), () => editor.chain().focus().toggleBulletList().run(), "• 목록")}
+      {btn(editor.isActive("orderedList"), () => editor.chain().focus().toggleOrderedList().run(), "1. 목록")}
+      {btn(editor.isActive("taskList"), () => editor.chain().focus().toggleTaskList().run(), "☑ 체크")}
+      {btn(editor.isActive("blockquote"), () => editor.chain().focus().toggleBlockquote().run(), "인용")}
+      {btn(editor.isActive("codeBlock"), () => editor.chain().focus().toggleCodeBlock().run(), "코드")}
+      <span className="tb__sep" />
+      {btn(editor.isActive("link"), setLink, "링크")}
     </div>
   );
 }
