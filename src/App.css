@@ -1679,3 +1679,43 @@ body {
 .todo-edit__delete:hover {
   background: var(--accent-soft);
 }
+
+/* ── 색 스와치 팝오버 (Task 4) ───────────────────── */
+.tb__color {
+  position: relative;
+  display: inline-flex;
+}
+
+.tb__swatches {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  z-index: 60;
+}
+
+.tb__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+}
+
+.tb__swatch--clear {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #888;
+}

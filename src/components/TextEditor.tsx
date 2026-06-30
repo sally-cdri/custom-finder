@@ -5,6 +5,9 @@ import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import TextStyle from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 import type { TextNode } from "../core/types";
 import { toEditorHtml } from "../core/text";
 
@@ -24,6 +27,9 @@ export function TextEditor({ node, onSave, onClose }: Props) {
       Link.configure({ openOnClick: false }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
     ],
     content: toEditorHtml(node.content),
   });
@@ -68,6 +74,11 @@ export function TextEditor({ node, onSave, onClose }: Props) {
 function Toolbar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
 
+  // 글자색 팔레트
+  const TEXT_COLORS = ["#e03131", "#1971c2", "#2f9e44", "#f08c00", "#9c36b5", "#212529"];
+  // 배경색(하이라이트) 팔레트
+  const HL_COLORS = ["#ffec99", "#b2f2bb", "#a5d8ff", "#ffc9c9", "#eebefa", "#dee2e6"];
+
   const btn = (active: boolean, onClick: () => void, label: string) => (
     <button
       type="button"
@@ -108,6 +119,73 @@ function Toolbar({ editor }: { editor: Editor | null }) {
       {btn(editor.isActive("codeBlock"), () => editor.chain().focus().toggleCodeBlock().run(), "코드")}
       <span className="tb__sep" />
       {btn(editor.isActive("link"), setLink, "링크")}
+      <span className="tb__sep" />
+      <ColorPopover
+        label="글자색"
+        colors={TEXT_COLORS}
+        onPick={(c) => editor.chain().focus().setColor(c).run()}
+        onClear={() => editor.chain().focus().unsetColor().run()}
+      />
+      <ColorPopover
+        label="배경색"
+        colors={HL_COLORS}
+        onPick={(c) => editor.chain().focus().toggleHighlight({ color: c }).run()}
+        onClear={() => editor.chain().focus().unsetHighlight().run()}
+      />
     </div>
+  );
+}
+
+// 색 스와치 팝오버 컴포넌트
+function ColorPopover({
+  label,
+  colors,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  colors: string[];
+  onPick: (color: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="tb__color">
+      <button
+        type="button"
+        className="tb__btn"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {label} ▾
+      </button>
+      {open && (
+        <div className="tb__swatches" onMouseDown={(e) => e.preventDefault()}>
+          {colors.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="tb__swatch"
+              style={{ background: c }}
+              onClick={() => {
+                onPick(c);
+                setOpen(false);
+              }}
+            />
+          ))}
+          <button
+            type="button"
+            className="tb__swatch tb__swatch--clear"
+            title="지우기"
+            onClick={() => {
+              onClear();
+              setOpen(false);
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </span>
   );
 }
