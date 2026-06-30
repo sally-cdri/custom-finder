@@ -1,10 +1,11 @@
 import type { FinderNode } from "./types";
+import { htmlToPlainText } from "./text";
 
 /** 노드 하나에서 검색 대상이 되는 텍스트들을 모은다. */
 function haystack(node: FinderNode): string {
   const parts = [node.name];
   if (node.type === "link") parts.push(node.url);
-  if (node.type === "text") parts.push(node.content);
+  if (node.type === "text") parts.push(htmlToPlainText(node.content));
   if (node.type === "file" || node.type === "image") parts.push(node.originalName);
   return parts.join(" ").toLowerCase();
 }

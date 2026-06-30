@@ -39,4 +39,27 @@ describe("searchNodes", () => {
   it("대소문자 무시 매칭", () => {
     expect(searchNodes(nodes, "TRAVEL").map((n) => n.id)).toEqual(["l"]);
   });
+
+  it("HTML 메모 본문도 텍스트로 검색된다", () => {
+    const nodes = [
+      {
+        id: "t1", type: "text", name: "회의록", parentId: null, order: 0,
+        createdAt: 0, updatedAt: 0,
+        content: "<p>예산 <strong>승인</strong> 건</p>",
+      },
+    ] as any;
+    const hit = searchNodes(nodes, "승인");
+    expect(hit.map((n: any) => n.id)).toEqual(["t1"]);
+  });
+
+  it("HTML 태그 이름은 검색에 잡히지 않는다", () => {
+    const nodes = [
+      {
+        id: "t2", type: "text", name: "메모", parentId: null, order: 0,
+        createdAt: 0, updatedAt: 0,
+        content: "<strong>본문</strong>",
+      },
+    ] as any;
+    expect(searchNodes(nodes, "strong")).toEqual([]);
+  });
 });

@@ -21,7 +21,7 @@ import {
   updateNode,
 } from "./core/tree";
 import { searchNodes } from "./core/search";
-import { deriveTitle } from "./core/text";
+import { deriveTitle, htmlToPlainText } from "./core/text";
 import { detectService } from "./core/links";
 import { prepareImport } from "./core/bundle";
 import {
@@ -477,8 +477,8 @@ export default function App() {
 
   const handleSaveText = useCallback(
     (id: string, name: string, content: string) => {
-      // 제목을 비우면 아이폰 메모처럼 첫 줄에서 자동 추출
-      const title = name.trim() || deriveTitle(content);
+      // 제목을 비우면 아이폰 메모처럼 첫 줄에서 자동 추출 (HTML이면 텍스트로 변환 후)
+      const title = name.trim() || deriveTitle(htmlToPlainText(content));
       setNodes((prev) => updateNode(prev, id, { name: title, content }));
     },
     [],

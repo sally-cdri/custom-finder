@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FinderNode } from "../core/types";
 import { assetSrc, storedFileExists } from "../app/import";
-import { middleEllipsis } from "../core/text";
+import { middleEllipsis, htmlToPlainText } from "../core/text";
 import { typeLabel, formatShortDate, type ViewMode } from "../core/view";
 import { TypeIcon } from "./icons";
 import { serviceIcon } from "./services";
@@ -194,7 +194,7 @@ export function ItemCard({
         {node.type === "image" && thumb && !missing ? (
           <img src={thumb} alt={node.name} className="card__img" />
         ) : node.type === "text" ? (
-          <NotePreview title={node.name} body={node.content} />
+          <NotePreview title={node.name} body={htmlToPlainText(node.content)} />
         ) : node.type === "link" && serviceIcon(node.service) ? (
           <img
             src={serviceIcon(node.service)!}
